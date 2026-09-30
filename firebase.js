@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD0GbueWsIm8kaUnB6sZYykYSZl11s2JTs",
@@ -12,9 +13,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export const db = getFirestore(app); // Exporté pour l'orchestrateur
 const storage = getStorage(app);
-console.log("🔥 Architecture Pro Firebase initialisée !");
+console.log("🔥 Architecture Pro Firebase & IA initialisée !");
 
 const ELEVE_ID = "coco";
 
@@ -43,9 +44,13 @@ window.lancerJeu = function(nomMode) {
   let messageTuteur = document.getElementById('tutor-message');
   document.getElementById('tutor-title').textContent = "Mode " + nomMode;
   messageTuteur.innerHTML = "Chargement de la session pour <b>" + ELEVE_ID.toUpperCase() + "</b> en mode <b>" + nomMode + "</b>...";
+  
+  // Exemple d'utilisation de l'Agent 3 (Maître du Jeu)
+  let defiGenere = OrchestrateurAI.genererDefiJeu(nomMode, { conceptsCles: ["Notions générales", "Exercices"] });
+  console.log(defiGenere.defi);
 };
 
-// Sauvegarde des fiches par profil
+// Gestion de l'import et pipeline IA
 document.getElementById('camera-input').addEventListener('change', async function(event) {
   const fichier = event.target.files[0];
   
@@ -55,11 +60,10 @@ document.getElementById('camera-input').addEventListener('change', async functio
     
     document.getElementById('preview-zone').style.display = 'block';
     document.getElementById('image-preview').style.display = 'none';
-    document.getElementById('doc-preview').style.display = 'none';
     
     let texteAnalyse = document.getElementById('analysis-text');
     texteAnalyse.style.color = "#00f2fe";
-    texteAnalyse.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Stockage dans le profil...';
+    texteAnalyse.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Stockage et analyse par les IA...';
 
     if (typeFichier.startsWith('image/')) {
       const lecteur = new FileReader();
@@ -69,42 +73,23 @@ document.getElementById('camera-input').addEventListener('change', async functio
         document.getElementById('image-preview').style.display = 'block';
 
         try {
+          // 1. Stockage Storage
           const storageRef = ref(storage, 'utilisateurs/' + ELEVE_ID + '/fiches/' + Date.now() + '_' + nomFichier);
           await uploadString(storageRef, base64Image, 'data_url');
           let lienImage = await getDownloadURL(storageRef);
 
-          await addDoc(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"), {
-            nomFiche: nomFichier,
-            urlFiche: lienImage,
-            type: "Image",
-            date: new Date().toLocaleDateString()
-          });
+          // 2. Appel du Chef d'orchestre des 4 IA
+          await OrchestrateurAI.analyserFiche(ELEVE_ID, lienImage, nomFichier);
 
           texteAnalyse.style.color = "#4facfe";
-          texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fiche enregistrée avec succès !';
+          texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fiche analysée et structurée par le Tuteur !';
         } catch (erreur) {
-          console.error("Erreur de sauvegarde : ", erreur);
+          console.error("Erreur de pipeline IA : ", erreur);
           texteAnalyse.style.color = "#ff5858";
-          texteAnalyse.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erreur d\'enregistrement.';
+          texteAnalyse.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erreur lors de l\'analyse.';
         }
       };
       lecteur.readAsDataURL(fichier);
-    } else {
-      document.getElementById('doc-name').textContent = nomFichier;
-      document.getElementById('doc-preview').style.display = 'block';
-      
-      try {
-        await addDoc(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"), {
-          nomFiche: nomFichier,
-          type: "Document",
-          date: new Date().toLocaleDateString()
-        });
-
-          texteAnalyse.style.color = "#4facfe";
-          texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Document ajouté !';
-      } catch (erreur) {
-        console.error("Erreur : ", erreur);
-      }
     }
   }
 });
