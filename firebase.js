@@ -1,161 +1,186 @@
-// --- CONFIGURATION FIREBASE & GESTIONNAIRE D'UPLOAD MULTIPAGE ---
+// --- CHEF D'ORCHESTRE DES AGENTS IA (SUPPORT MULTIPAGE & ILLUSTRATIONS AUTO) ---
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import { OrchestrateurAI } from "./ai/orchestrateur.js";
+import { db } from "../firebase.js"; 
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// 1. Initialisation Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyDummyKey", // Firebase utilise les règles Firestore, pas de risque ici
-  authDomain: "mon-tuteur-ai.firebaseapp.com",
-  projectId: "mon-tuteur-ai",
-  storageBucket: "mon-tuteur-ai.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
-};
+// L'URL de ton relais Apps Script
+const RELAIS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbvHkVRVNowyy_98Dpv44WinuqK0FmQ88HO4Q-DvcWg45P4UhH9vzzw10jmraVEDzx/exec";
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const OrchestrateurAI = {
 
-// Élève par défaut pour le prototype
-const eleveActifId = "coco_01";
+  // =========================================================================
+  // AGENT 1 : Vision & Analyse du document (Extraction du cours + visuels)
+  // =========================================================================
+  async analyserFiche(eleveId, fichierUrl, nomFichier, imagesData) {
+    console.log("👁️ Agent 1 (Vision) : Analyse approfondie du document...", nomFichier);
 
-// =========================================================================
-// UTILITAIRE : Extraction HD d'une photo ou d'un PDF multipage
-// =========================================================================
-async function convertirDocumentEnImagesHD(file, maxPages = 6) {
-  // CAS 1 : C'est une image (JPG, PNG, WEBP)
-  if (file.type.startsWith("image/")) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve([e.target.result]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
+    let sujetPropre = nomFichier ? nomFichier.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : "Leçon";
+    let donneesExtraites = null;
 
-  // CAS 2 : C'est un PDF
-  if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const totalPages = pdf.numPages;
-    const nbPagesATraiter = Math.min(totalPages, maxPages);
-    const pagesHD = [];
+    // Harmonise sous forme de tableau qu'on reçoive 1 image ou plusieurs pages PDF
+    const listePages = Array.isArray(imagesData) ? imagesData : [imagesData];
 
-    const statusText = document.getElementById("analysis-text");
-    if (statusText) {
-      statusText.textContent = `Conversion du PDF : 0/${nbPagesATraiter} page(s)...`;
+    const promptInstruction = `
+Tu es le tuteur pédagogique personnel de l'élève.
+Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, schémas, tableaux) sur l'ensemble des pages transmises.
+
+Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette structure exacte :
+{
+  "titre": "Titre exact de la leçon",
+  "matiere": "Matière scolaire (ex: Univers social, Sciences, Français, Mathématiques)",
+  "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé de manière à ce que l'élève puisse tout réviser et comprendre sans avoir besoin du document d'origine.",
+  "sections_fiche": [
+    {
+      "titre": "Titre du bloc de révision",
+      "icone": "fa-book-open",
+      "points": ["Point clé 1", "Point clé 2", "Point clé 3"]
     }
-
-    for (let numPage = 1; numPage <= nbPagesATraiter; numPage++) {
-      const page = await pdf.getPage(numPage);
-      
-      // Facteur d'échelle 1.8 pour une excellente netteté des schémas et textes
-      const viewport = page.getViewport({ scale: 1.8 });
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      await page.render({
-        canvasContext: ctx,
-        viewport: viewport
-      }).promise;
-
-      // Compression JPEG 0.85 pour un envoi ultra-rapide
-      const base64Page = canvas.toDataURL("image/jpeg", 0.85);
-      pagesHD.push(base64Page);
-
-      if (statusText) {
-        statusText.textContent = `Conversion du PDF : ${numPage}/${nbPagesATraiter} page(s)...`;
-      }
+  ],
+  "notions": [
+    {
+      "concept": "Nom du concept ou terme clé",
+      "definition": "Explication claire et vraie du concept selon le cours.",
+      "terme_recherche_visuelle": "Mots-clés précis en anglais pour trouver une image éducative ou un schéma (ex: 'plant cell diagram', 'roman gladiator shield', 'water cycle illustration')",
+      "faux1": "Une affirmation fausse mais plausible sur ce concept",
+      "faux2": "Une deuxième affirmation erronée sur ce concept"
     }
-
-    return pagesHD;
-  }
-
-  throw new Error("Format non pris en charge. Utilise un PDF ou une image.");
+  ]
 }
-
-// =========================================================================
-// ÉCOUTEUR D'UPLOAD SUR L'INTERFACE
-// =========================================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const fileInput = document.getElementById("camera-input");
-  const previewZone = document.getElementById("preview-zone");
-  const imagePreview = document.getElementById("image-preview");
-  const analysisText = document.getElementById("analysis-text");
-
-  if (!fileInput) return;
-
-  fileInput.addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (previewZone) previewZone.style.display = "block";
-    if (analysisText) analysisText.textContent = "Préparation du document...";
-    if (imagePreview) imagePreview.style.display = "none";
+Génère l'ensemble des notions clés nécessaires pour maîtriser le chapitre complet.
+`;
 
     try {
-      // 1. Extraction des pages HD
-      const pagesExtraites = await convertirDocumentEnImagesHD(file, 6);
+      if (listePages.length > 0 && listePages[0]) {
+        const parts = [{ text: promptInstruction }];
 
-      // Aperçu de la première page dans l'interface
-      if (imagePreview && pagesExtraites.length > 0) {
-        imagePreview.src = pagesExtraites[0];
-        imagePreview.style.display = "block";
-      }
-
-      if (analysisText) {
-        analysisText.textContent = `Analyse par Nox de ${pagesExtraites.length} page(s) en cours... ⏳`;
-      }
-
-      // 2. Envoi des pages à l'Agent Vision (qui utilise le relais Apps Script)
-      const resultatFiche = await OrchestrateurAI.analyserFiche(
-        eleveActifId,
-        "",
-        file.name,
-        pagesExtraites
-      );
-
-      if (analysisText) {
-        analysisText.textContent = `✅ "${resultatFiche.titre}" analysé avec succès !`;
-      }
-
-    } catch (err) {
-      console.error("Erreur lors du traitement du document :", err);
-      if (analysisText) {
-        analysisText.textContent = "❌ Erreur lors de l'analyse. Réessaie avec une image plus nette.";
-      }
-    } finally {
-      fileInput.value = ""; // Réinitialise l'input
-    }
-  });
-
-  // Écoute des erreurs de l'élève en direct (Agent 4 Ninja)
-  const ninjaList = document.getElementById("erreurs-list");
-  const ninjaAlert = document.getElementById("ninja-alert");
-
-  if (ninjaList && ninjaAlert) {
-    const q = query(
-      collection(db, "utilisateurs", eleveActifId, "erreurs_ninja"),
-      orderBy("timestamp", "desc")
-    );
-
-    onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        ninjaAlert.style.display = "none";
-      } else {
-        ninjaAlert.style.display = "block";
-        ninjaList.innerHTML = "";
-        snapshot.docs.slice(0, 3).forEach((doc) => {
-          const item = doc.data();
-          const li = document.createElement("li");
-          li.textContent = `${item.matiere} : ${item.detail}`;
-          ninjaList.appendChild(li);
+        listePages.forEach((pageBase64) => {
+          const cleanBase64 = pageBase64.split(",")[1] || pageBase64;
+          const mimeType = pageBase64.split(";")[0].split(":")[1] || "image/jpeg";
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: cleanBase64
+            }
+          });
         });
+
+        const payloadGemini = {
+          contents: [{ parts: parts }],
+          generationConfig: {
+            temperature: 0.2,
+            response_mime_type: "application/json"
+          }
+        };
+
+        const response = await fetch(RELAIS_APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ payload: payloadGemini })
+        });
+
+        const resJson = await response.json();
+
+        if (resJson.candidates && resJson.candidates[0].content.parts[0].text) {
+          const texteReponse = resJson.candidates[0].content.parts[0].text;
+          donneesExtraites = JSON.parse(texteReponse);
+        } else if (resJson.error) {
+          console.error("Erreur renvoyée par l'API :", resJson.error);
+        }
       }
-    });
+    } catch (err) {
+      console.warn("Échec de la communication avec le relais. Utilisation du repli local.", err);
+    }
+
+    // Données de repli en cas de problème de réseau
+    if (!donneesExtraites) {
+      donneesExtraites = {
+        titre: sujetPropre,
+        matiere: "Général",
+        resume_complet: `Synthèse de la leçon portant sur ${sujetPropre}. Ce chapitre présente l'ensemble des notions indispensables.`,
+        sections_fiche: [
+          {
+            titre: "Points essentiels",
+            icone: "fa-lightbulb",
+            points: ["Compréhension des définitions", "Observation des règles", "Mémorisation active"]
+          }
+        ],
+        notions: [
+          {
+            concept: sujetPropre,
+            definition: "Notion centrale étudiée au cours de ce chapitre.",
+            terme_recherche_visuelle: "school study education book",
+            faux1: "est totalement inutile dans la matière",
+            faux2: "fonctionne à l'inverse des règles établies"
+          }
+        ]
+      };
+    }
+
+    // Sauvegarde automatique dans Firestore pour l'élève
+    await this.transmettreAuTuteur(eleveId, donneesExtraites, nomFichier);
+    return donneesExtraites;
+  },
+
+  // =========================================================================
+  // AGENT 2 : Enregistrement de la fiche dans Firestore
+  // =========================================================================
+  async transmettreAuTuteur(eleveId, donneesFiche, nomFichier) {
+    console.log("🧠 Agent 2 (Tuteur) : Écriture dans Firestore pour", eleveId);
+    try {
+      const docRef = await addDoc(collection(db, "utilisateurs", eleveId, "fiches_cours"), {
+        titre: donneesFiche.titre,
+        matiere: donneesFiche.matiere,
+        resume_complet: donneesFiche.resume_complet,
+        sections_fiche: donneesFiche.sections_fiche,
+        notions: donneesFiche.notions,
+        nom_fichier_source: nomFichier || "",
+        timestamp: serverTimestamp()
+      });
+      console.log("✅ Fiche enregistrée avec succès dans Firestore ! ID:", docRef.id);
+    } catch (e) {
+      console.error("❌ Erreur lors de l'écriture Firestore :", e);
+    }
+  },
+
+  // =========================================================================
+  // AGENT 3 : Préparation des données pour les modes de jeu
+  // =========================================================================
+  genererDefiJeu(modeJeu, ficheActive) {
+    let titre = ficheActive && ficheActive.titre ? ficheActive.titre : "Leçon";
+    let notions = ficheActive && Array.isArray(ficheActive.notions) ? ficheActive.notions : [];
+    let conceptRef = notions.length > 0 ? notions[0].concept : titre;
+
+    let descriptionDefi = `Maîtrise les principes fondamentaux de : ${titre}`;
+
+    if (modeJeu.includes("Chasse aux erreurs")) {
+      descriptionDefi = `Identifie les erreurs discrètement glissées dans les explications sur : ${conceptRef}.`;
+    } else if (modeJeu.includes("Combat") || modeJeu.includes("monstre")) {
+      descriptionDefi = `Déclenche tes attaques élémentaires en répondant juste aux questions sur : ${titre} !`;
+    } else if (modeJeu.includes("Construis")) {
+      descriptionDefi = `Récolte des ressources à chaque bonne réponse sur : ${titre}.`;
+    } else if (modeJeu.includes("Détective")) {
+      descriptionDefi = `Résous l'enquête en t'appuyant sur les indices du cours sur : ${conceptRef}.`;
+    }
+
+    return {
+      jeu: modeJeu,
+      defi: descriptionDefi
+    };
+  },
+
+  // =========================================================================
+  // AGENT 4 : Journal d'erreurs (Suivi pédagogique)
+  // =========================================================================
+  async surveillerErreurs(eleveId, erreurDetectee) {
+    console.log("🥷 Agent 4 : Enregistrement de l'erreur...");
+    try {
+      await addDoc(collection(db, "utilisateurs", eleveId, "erreurs_ninja"), {
+        matiere: erreurDetectee.matiere || "Général",
+        detail: erreurDetectee.detail || "Erreur de révision",
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Erreur de suivi :", e);
+    }
   }
-});
+};
