@@ -3,13 +3,13 @@
 import { db } from "../firebase.js"; 
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// L'URL de ton relais privé Apps Script (qui protège ta clé Gemini)
-const RELAIS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-t_UCrnLyFo-TOoRqqLuq0GbhfA0cyhFe35qWkIgs_0xunmCIj6ZpcosMC5FlT0_KgA/exec";
+// L'URL de ton nouveau déploiement Apps Script
+const RELAIS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbvHkVRVNowyy_98Dpv44WinuqK0FmQ88HO4Q-DvcWg45P4UhH9vzzw10jmraVEDzx/exec";
 
 export const OrchestrateurAI = {
 
   // =========================================================================
-  // AGENT 1 : Vision & Analyse du document (Extraction du cours réel par l'IA)
+  // AGENT 1 : Vision & Analyse du document
   // =========================================================================
   async analyserFiche(eleveId, fichierUrl, nomFichier, base64Data) {
     console.log("👁️ Agent 1 (Vision) : Analyse approfondie du document...", nomFichier);
@@ -17,7 +17,6 @@ export const OrchestrateurAI = {
     let sujetPropre = nomFichier ? nomFichier.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : "Leçon";
     let donneesExtraites = null;
 
-    // Définition de la consigne et de la structure du JSON Pivot
     const promptInstruction = `
 Tu es le tuteur pédagogique de l'élève.
 Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, notions).
@@ -51,7 +50,6 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
         const cleanBase64 = base64Data.split(",")[1] || base64Data;
         const mimeType = base64Data.split(";")[0].split(":")[1] || "image/jpeg";
 
-        // Préparation du payload Gemini standard
         const payloadGemini = {
           contents: [{
             parts: [
@@ -70,7 +68,6 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
           }
         };
 
-        // Envoi au relais Apps Script
         const response = await fetch(RELAIS_APPS_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -90,7 +87,6 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
       console.warn("Échec de la communication avec le relais. Utilisation du repli local.", err);
     }
 
-    // Structure de secours si hors-ligne ou erreur réseau
     if (!donneesExtraites) {
       donneesExtraites = {
         titre: sujetPropre,
@@ -114,7 +110,6 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
       };
     }
 
-    // Sauvegarde automatique dans Firestore pour l'élève actif
     await this.transmettreAuTuteur(eleveId, donneesExtraites, nomFichier);
     return donneesExtraites;
   },
@@ -134,7 +129,7 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
         nom_fichier_source: nomFichier || "",
         timestamp: serverTimestamp()
       });
-      console.log("✅ Fiche de cours enregistrée avec succès dans Firestore ! ID:", docRef.id);
+      console.log("✅ Fiche enregistrée avec succès dans Firestore ! ID:", docRef.id);
     } catch (e) {
       console.error("❌ Erreur lors de l'écriture Firestore :", e);
     }
@@ -167,7 +162,7 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
   },
 
   // =========================================================================
-  // AGENT 4 : Journal d'erreurs (Suivi pédagogique)
+  // AGENT 4 : Journal d'erreurs
   // =========================================================================
   async surveillerErreurs(eleveId, erreurDetectee) {
     console.log("🥷 Agent 4 : Enregistrement de l'erreur...");
