@@ -24,7 +24,6 @@ async function verifierMemoireNinjaPro() {
   let zoneAlerte = document.getElementById('ninja-alert');
   let listeErreurs = document.getElementById('erreurs-list');
   
-  // Si les éléments ne sont pas encore dans le DOM, on arrête pour éviter le bug
   if (!zoneAlerte || !listeErreurs) return;
   
   try {
@@ -56,7 +55,6 @@ window.lancerJeu = function(nomMode) {
   if (messageTuteur) messageTuteur.innerHTML = "Chargement de la session pour <b>" + ELEVE_ID.toUpperCase() + "</b> en mode <b>" + nomMode + "</b>...";
   if (zoneAlerte) zoneAlerte.style.display = 'block';
   
-  // Exemple d'utilisation de l'Agent 3 (Maître du Jeu)
   try {
     let defiGenere = OrchestrateurAI.genererDefiJeu(nomMode, { conceptsCles: ["Notions générales", "Exercices"] });
     console.log(defiGenere.defi);
@@ -105,8 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
               await uploadString(storageRef, base64Image, 'data_url');
               let lienImage = await getDownloadURL(storageRef);
 
-              // 2. Appel du Chef d'orchestre des 4 IA
-              await OrchestrateurAI.analyserFiche(ELEVE_ID, lienImage, nomFichier);
+              // 2. Appel du Chef d'orchestre des 4 IA avec transmission de l'image
+              await OrchestrateurAI.analyserFiche(ELEVE_ID, lienImage, nomFichier, base64Image);
 
               if (texteAnalyse) {
                 texteAnalyse.style.color = "#4facfe";
