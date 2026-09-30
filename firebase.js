@@ -1,147 +1,160 @@
+// --- CONFIGURATION FIREBASE & GESTIONNAIRE D'UPLOAD MULTIPAGE ---
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
+// 1. Initialisation Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyD0GbueWsIm8kaUnB6sZYykYSZl11s2JTs",
-  authDomain: "tuteur-ai.firebaseapp.com",
-  projectId: "tuteur-ai",
-  storageBucket: "tuteur-ai.firebasestorage.app",
-  messagingSenderId: "1025983965857",
-  appId: "1:1025983965857:web:121d32b494c8433f9f1ee0"
+  apiKey: "AIzaSyDummyKey", // Firebase utilise les règles Firestore, pas de risque ici
+  authDomain: "mon-tuteur-ai.firebaseapp.com",
+  projectId: "mon-tuteur-ai",
+  storageBucket: "mon-tuteur-ai.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
 };
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-console.log("🔥 Architecture Pro Firestore & IA initialisée !");
 
-const ELEVE_ID = "coco";
+// Élève par défaut pour le prototype
+const eleveActifId = "coco_01";
 
-// Système Ninja structuré avec sécurité anti-null
-async function verifierMemoireNinjaPro() {
-  let zoneAlerte = document.getElementById('ninja-alert');
-  let listeErreurs = document.getElementById('erreurs-list');
-  
-  if (!zoneAlerte || !listeErreurs) return;
-  
-  try {
-    const querySnapshot = await getDocs(collection(db, "utilisateurs", ELEVE_ID, "erreurs_ninja"));
-    
-    if (!querySnapshot.empty) {
-      listeErreurs.innerHTML = ''; 
-      querySnapshot.forEach((docInfos) => {
-        let erreur = docInfos.data();
-        let li = document.createElement('li');
-        li.textContent = erreur.matiere + " : " + erreur.detail;
-        listeErreurs.appendChild(li);
-      });
-      zoneAlerte.style.display = 'block';
-    } else {
-      zoneAlerte.style.display = 'none';
-    }
-  } catch (e) {
-    console.log("Chargement Ninja en attente de connexion Firestore...");
+// =========================================================================
+// UTILITAIRE : Extraction HD d'une photo ou d'un PDF multipage
+// =========================================================================
+async function convertirDocumentEnImagesHD(file, maxPages = 6) {
+  // CAS 1 : C'est une image (JPG, PNG, WEBP)
+  if (file.type.startsWith("image/")) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve([e.target.result]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
+
+  // CAS 2 : C'est un PDF
+  if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const totalPages = pdf.numPages;
+    const nbPagesATraiter = Math.min(totalPages, maxPages);
+    const pagesHD = [];
+
+    const statusText = document.getElementById("analysis-text");
+    if (statusText) {
+      statusText.textContent = `Conversion du PDF : 0/${nbPagesATraiter} page(s)...`;
+    }
+
+    for (let numPage = 1; numPage <= nbPagesATraiter; numPage++) {
+      const page = await pdf.getPage(numPage);
+      
+      // Facteur d'échelle 1.8 pour une excellente netteté des schémas et textes
+      const viewport = page.getViewport({ scale: 1.8 });
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({
+        canvasContext: ctx,
+        viewport: viewport
+      }).promise;
+
+      // Compression JPEG 0.85 pour un envoi ultra-rapide
+      const base64Page = canvas.toDataURL("image/jpeg", 0.85);
+      pagesHD.push(base64Page);
+
+      if (statusText) {
+        statusText.textContent = `Conversion du PDF : ${numPage}/${nbPagesATraiter} page(s)...`;
+      }
+    }
+
+    return pagesHD;
+  }
+
+  throw new Error("Format non pris en charge. Utilise un PDF ou une image.");
 }
 
-// L'Agent 3 (Maître du Jeu) connecté à Firestore en temps réel lorsqu'on clique sur un jeu
-window.lancerJeu = async function(nomMode) {
-  let messageTuteur = document.getElementById('tutor-message');
-  let titreTuteur = document.getElementById('tutor-title');
-  let zoneAlerte = document.getElementById('ninja-alert');
-  
-  if (titreTuteur) titreTuteur.textContent = "Mode " + nomMode;
-  if (messageTuteur) messageTuteur.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Le Maître du Jeu prépare ton défi...';
-  if (zoneAlerte) zoneAlerte.style.display = 'block';
-  
-  try {
-    // 1. Récupérer la dernière fiche de cours enregistrée dans Firestore
-    const q = query(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"), orderBy("timestamp", "desc"), limit(1));
-    const querySnapshot = await getDocs(q);
-    
-    let notionsFic = { conceptsCles: ["Notions générales", "Exercices de révision"] };
-    let titreCours = "Cours général";
-
-    if (!querySnapshot.empty) {
-      querySnapshot.forEach((document) => {
-        let data = document.data();
-        if (data.conceptsCles) notionsFic.conceptsCles = data.conceptsCles;
-        if (data.titre) titreCours = data.titre;
-      });
-    }
-
-    // 2. Appel de l'Agent 3 pour générer le défi sur mesure
-    let defiGenere = OrchestrateurAI.genererDefiJeu(nomMode, notionsFic);
-
-    // 3. Affichage du défi personnalisé dans l'interface
-    if (messageTuteur) {
-      messageTuteur.innerHTML = `
-        <b>Sujet :</b> ${titreCours}<br>
-        <b>Défi :</b> ${defiGenere.defi}
-      `;
-    }
-
-  } catch (err) {
-    console.log("Erreur lors de la génération du jeu :", err);
-    if (messageTuteur) {
-      messageTuteur.innerHTML = "Session initialisée en mode " + nomMode + " ! Prépare-toi à jouer.";
-    }
-  }
-};
-
-// Gestion de l'import et enregistrement Firestore
+// =========================================================================
+// ÉCOUTEUR D'UPLOAD SUR L'INTERFACE
+// =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-  verifierMemoireNinjaPro();
+  const fileInput = document.getElementById("camera-input");
+  const previewZone = document.getElementById("preview-zone");
+  const imagePreview = document.getElementById("image-preview");
+  const analysisText = document.getElementById("analysis-text");
 
-  const cameraInput = document.getElementById('camera-input');
-  if (cameraInput) {
-    cameraInput.addEventListener('change', async function(event) {
-      const fichier = event.target.files[0];
-      
-      if (fichier) {
-        const nomFichier = fichier.name;
-        const previewZone = document.getElementById('preview-zone');
-        const imagePreview = document.getElementById('image-preview');
-        const texteAnalyse = document.getElementById('analysis-text');
+  if (!fileInput) return;
 
-        if (previewZone) previewZone.style.display = 'block';
-        if (imagePreview) imagePreview.style.display = 'none';
-        
-        if (texteAnalyse) {
-          texteAnalyse.style.color = "#00f2fe";
-          texteAnalyse.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyse et enregistrement par les IA...';
-        }
+  fileInput.addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-        try {
-          let base64Image = null;
+    if (previewZone) previewZone.style.display = "block";
+    if (analysisText) analysisText.textContent = "Préparation du document...";
+    if (imagePreview) imagePreview.style.display = "none";
 
-          if (fichier.type.startsWith('image/')) {
-            const lecteur = new FileReader();
-            lecteur.onload = async function(e) {
-              base64Image = e.target.result;
-              if (imagePreview) {
-                imagePreview.src = base64Image;
-                imagePreview.style.display = 'block';
-              }
-            };
-            lecteur.readAsDataURL(fichier);
-          }
+    try {
+      // 1. Extraction des pages HD
+      const pagesExtraites = await convertirDocumentEnImagesHD(file, 6);
 
-          // Appel direct à l'orchestrateur pour stocker dans Firestore
-          await OrchestrateurAI.analyserFiche(ELEVE_ID, "local_file", nomFichier, base64Image);
+      // Aperçu de la première page dans l'interface
+      if (imagePreview && pagesExtraites.length > 0) {
+        imagePreview.src = pagesExtraites[0];
+        imagePreview.style.display = "block";
+      }
 
-          if (texteAnalyse) {
-            texteAnalyse.style.color = "#4facfe";
-            texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fiche analysée et enregistrée dans Firestore !';
-          }
+      if (analysisText) {
+        analysisText.textContent = `Analyse par Nox de ${pagesExtraites.length} page(s) en cours... ⏳`;
+      }
 
-        } catch (erreur) {
-          console.error("Erreur pipeline : ", erreur);
-          if (texteAnalyse) {
-            texteAnalyse.style.color = "#ff5858";
-            texteAnalyse.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erreur lors du traitement.';
-          }
-        }
+      // 2. Envoi des pages à l'Agent Vision (qui utilise le relais Apps Script)
+      const resultatFiche = await OrchestrateurAI.analyserFiche(
+        eleveActifId,
+        "",
+        file.name,
+        pagesExtraites
+      );
+
+      if (analysisText) {
+        analysisText.textContent = `✅ "${resultatFiche.titre}" analysé avec succès !`;
+      }
+
+    } catch (err) {
+      console.error("Erreur lors du traitement du document :", err);
+      if (analysisText) {
+        analysisText.textContent = "❌ Erreur lors de l'analyse. Réessaie avec une image plus nette.";
+      }
+    } finally {
+      fileInput.value = ""; // Réinitialise l'input
+    }
+  });
+
+  // Écoute des erreurs de l'élève en direct (Agent 4 Ninja)
+  const ninjaList = document.getElementById("erreurs-list");
+  const ninjaAlert = document.getElementById("ninja-alert");
+
+  if (ninjaList && ninjaAlert) {
+    const q = query(
+      collection(db, "utilisateurs", eleveActifId, "erreurs_ninja"),
+      orderBy("timestamp", "desc")
+    );
+
+    onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        ninjaAlert.style.display = "none";
+      } else {
+        ninjaAlert.style.display = "block";
+        ninjaList.innerHTML = "";
+        snapshot.docs.slice(0, 3).forEach((doc) => {
+          const item = doc.data();
+          const li = document.createElement("li");
+          li.textContent = `${item.matiere} : ${item.detail}`;
+          ninjaList.appendChild(li);
+        });
       }
     });
   }
