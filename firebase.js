@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
 const firebaseConfig = {
@@ -44,24 +44,52 @@ async function verifierMemoireNinjaPro() {
   }
 }
 
-window.lancerJeu = function(nomMode) {
+// L'Agent 3 (Maître du Jeu) connecté à Firestore en temps réel lorsqu'on clique sur un jeu
+window.lancerJeu = async function(nomMode) {
   let messageTuteur = document.getElementById('tutor-message');
   let titreTuteur = document.getElementById('tutor-title');
   let zoneAlerte = document.getElementById('ninja-alert');
   
   if (titreTuteur) titreTuteur.textContent = "Mode " + nomMode;
-  if (messageTuteur) messageTuteur.innerHTML = "Chargement de la session pour <b>" + ELEVE_ID.toUpperCase() + "</b> en mode <b>" + nomMode + "</b>...";
+  if (messageTuteur) messageTuteur.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Le Maître du Jeu prépare ton défi...';
   if (zoneAlerte) zoneAlerte.style.display = 'block';
   
   try {
-    let defiGenere = OrchestrateurAI.genererDefiJeu(nomMode, { conceptsCles: ["Notions générales", "Exercices"] });
-    console.log(defiGenere.defi);
+    // 1. Récupérer la dernière fiche de cours enregistrée dans Firestore
+    const q = query(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"), orderBy("timestamp", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+    
+    let notionsFic = { conceptsCles: ["Notions générales", "Exercices de révision"] };
+    let titreCours = "Cours général";
+
+    if (!querySnapshot.empty) {
+      querySnapshot.forEach((document) => {
+        let data = document.data();
+        if (data.conceptsCles) notionsFic.conceptsCles = data.conceptsCles;
+        if (data.titre) titreCours = data.titre;
+      });
+    }
+
+    // 2. Appel de l'Agent 3 pour générer le défi sur mesure
+    let defiGenere = OrchestrateurAI.genererDefiJeu(nomMode, notionsFic);
+
+    // 3. Affichage du défi personnalisé dans l'interface
+    if (messageTuteur) {
+      messageTuteur.innerHTML = `
+        <b>Sujet :</b> ${titreCours}<br>
+        <b>Défi :</b> ${defiGenere.defi}
+      `;
+    }
+
   } catch (err) {
-    console.log("Mode de jeu initialisé :", nomMode);
+    console.log("Erreur lors de la génération du jeu :", err);
+    if (messageTuteur) {
+      messageTuteur.innerHTML = "Session initialisée en mode " + nomMode + " ! Prépare-toi à jouer.";
+    }
   }
 };
 
-// Gestion de l'import instantané et direct vers Firestore
+// Gestion de l'import et enregistrement Firestore
 document.addEventListener("DOMContentLoaded", () => {
   verifierMemoireNinjaPro();
 
@@ -99,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
             lecteur.readAsDataURL(fichier);
           }
 
-          // Appel direct à l'orchestrateur pour enregistrer dans Firestore sans passer par Storage (Évite le CORS)
+          // Appel direct à l'orchestrateur pour stocker dans Firestore
           await OrchestrateurAI.analyserFiche(ELEVE_ID, "local_file", nomFichier, base64Image);
 
           if (texteAnalyse) {
