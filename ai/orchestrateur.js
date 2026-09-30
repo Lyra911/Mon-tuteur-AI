@@ -1,10 +1,10 @@
-// --- CHEF D'ORCHESTRE DES 4 AGENTS IA (VERSION UNIVERSELLE FIRESTORE) ---
+// --- CHEF D'ORCHESTRE DES AGENTS IA (AVEC RELAIS SECURISE SCRIPT GOOGLE) ---
 
 import { db } from "../firebase.js"; 
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// Lecture sécurisée de la clé API depuis le navigateur (zéro blocage GitHub)
-const GEMINI_API_KEY = localStorage.getItem("GEMINI_API_KEY") || "";
+// L'URL de ton relais privé Apps Script (qui protège ta clé Gemini)
+const RELAIS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-t_UCrnLyFo-TOoRqqLuq0GbhfA0cyhFe35qWkIgs_0xunmCIj6ZpcosMC5FlT0_KgA/exec";
 
 export const OrchestrateurAI = {
 
@@ -13,30 +13,20 @@ export const OrchestrateurAI = {
   // =========================================================================
   async analyserFiche(eleveId, fichierUrl, nomFichier, base64Data) {
     console.log("👁️ Agent 1 (Vision) : Analyse approfondie du document...", nomFichier);
-    
-    // Demande de clé si absente du navigateur
-    let cleActive = GEMINI_API_KEY;
-    if (!cleActive) {
-      const saisie = prompt("Entre ta clé API Gemini pour analyser le cours de Coco :");
-      if (saisie) {
-        cleActive = saisie.trim();
-        localStorage.setItem("GEMINI_API_KEY", cleActive);
-      }
-    }
 
     let sujetPropre = nomFichier ? nomFichier.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : "Leçon";
     let donneesExtraites = null;
 
-    // 1. Définition du prompt système structuré
+    // Définition de la consigne et de la structure du JSON Pivot
     const promptInstruction = `
-Tu es le tuteur pédagogique personnel de l'élève Coco.
+Tu es le tuteur pédagogique de l'élève.
 Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, notions).
 
 Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette structure exacte :
 {
-  "titre": "Titre exact et complet de la leçon",
+  "titre": "Titre exact de la leçon",
   "matiere": "Matière scolaire (ex: Univers social, Sciences, Français, Mathématiques)",
-  "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé de manière à ce que l'élève puisse tout réviser et comprendre sans avoir besoin du document d'origine.",
+  "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé pour que l'élève puisse tout réviser sans le document d'origine.",
   "sections_fiche": [
     {
       "titre": "Titre du bloc de révision",
@@ -46,58 +36,66 @@ Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette str
   ],
   "notions": [
     {
-      "concept": "Nom du concept ou terme clé",
+      "concept": "Nom du concept clé",
       "definition": "Explication claire et vraie du concept selon le cours.",
       "faux1": "Une affirmation fausse mais plausible sur ce concept",
       "faux2": "Une deuxième affirmation erronée sur ce concept"
     }
   ]
 }
-Génère entre 8 et 12 notions détaillées dans le tableau "notions".
-    `;
+Génère l'ensemble des notions clés nécessaires à la compréhension globale du document.
+`;
 
-    // 2. Appel direct à l'API Gemini 1.5 Flash
     try {
-      if (base64Data && cleActive) {
-        const base64Clean = base64Data.split(",")[1] || base64Data;
+      if (base64Data) {
+        const cleanBase64 = base64Data.split(",")[1] || base64Data;
         const mimeType = base64Data.split(";")[0].split(":")[1] || "image/jpeg";
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleActive}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: promptInstruction },
-                {
-                  inline_data: {
-                    mime_type: mimeType,
-                    data: base64Clean
-                  }
+        // Préparation du payload Gemini standard
+        const payloadGemini = {
+          contents: [{
+            parts: [
+              { text: promptInstruction },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: cleanBase64
                 }
-              ]
-            }],
-            generationConfig: {
-              temperature: 0.2,
-              response_mime_type: "application/json"
-            }
-          })
+              }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            response_mime_type: "application/json"
+          }
+        };
+
+        // Envoi au relais Apps Script
+        const response = await fetch(RELAIS_APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ payload: payloadGemini })
         });
 
         const resJson = await response.json();
-        const texteReponse = resJson.candidates[0].content.parts[0].text;
-        donneesExtraites = JSON.parse(texteReponse);
+
+        if (resJson.candidates && resJson.candidates[0].content.parts[0].text) {
+          const texteReponse = resJson.candidates[0].content.parts[0].text;
+          donneesExtraites = JSON.parse(texteReponse);
+        } else if (resJson.error) {
+          console.error("Erreur renvoyée par l'API :", resJson.error);
+        }
       }
     } catch (err) {
-      console.warn("Échec de l'appel Gemini direct ou clé invalide. Utilisation du repli structuré.", err);
+      console.warn("Échec de la communication avec le relais. Utilisation du repli local.", err);
     }
 
-    // Structure de repli propre si aucun fichier ou pas de connexion API
+    // Structure de secours si hors-ligne ou erreur réseau
     if (!donneesExtraites) {
       donneesExtraites = {
         titre: sujetPropre,
         matiere: "Général",
-        resume_complet: `Synthèse de la leçon portant sur ${sujetPropre}. Ce chapitre présente l'ensemble des notions indispensables pour comprendre le sujet et réussir les révisions.`,
+        resume_complet: `Synthèse de la leçon portant sur ${sujetPropre}. Ce chapitre présente l'ensemble des notions indispensables pour comprendre le cours.`,
         sections_fiche: [
           {
             titre: "Points essentiels",
@@ -116,13 +114,13 @@ Génère entre 8 et 12 notions détaillées dans le tableau "notions".
       };
     }
 
-    // 3. Transmission à l'Agent 2 pour sauvegarde Firestore
+    // Sauvegarde automatique dans Firestore pour l'élève actif
     await this.transmettreAuTuteur(eleveId, donneesExtraites, nomFichier);
     return donneesExtraites;
   },
 
   // =========================================================================
-  // AGENT 2 : Le Tuteur Pédagogue (Sauvegarde du résumé et notions dans Firestore)
+  // AGENT 2 : Enregistrement de la fiche dans Firestore
   // =========================================================================
   async transmettreAuTuteur(eleveId, donneesFiche, nomFichier) {
     console.log("🧠 Agent 2 (Tuteur) : Écriture dans Firestore pour", eleveId);
@@ -143,11 +141,9 @@ Génère entre 8 et 12 notions détaillées dans le tableau "notions".
   },
 
   // =========================================================================
-  // AGENT 3 : Le Maître du Jeu (Alimentation dynamique des 15 modes)
+  // AGENT 3 : Préparation des données pour les modes de jeu
   // =========================================================================
   genererDefiJeu(modeJeu, ficheActive) {
-    console.log(`🎮 Agent 3 (Maître du Jeu) : Création instantanée du défi '${modeJeu}'`);
-    
     let titre = ficheActive && ficheActive.titre ? ficheActive.titre : "Leçon";
     let notions = ficheActive && Array.isArray(ficheActive.notions) ? ficheActive.notions : [];
     let conceptRef = notions.length > 0 ? notions[0].concept : titre;
@@ -155,11 +151,11 @@ Génère entre 8 et 12 notions détaillées dans le tableau "notions".
     let descriptionDefi = `Maîtrise les principes fondamentaux de : ${titre}`;
 
     if (modeJeu.includes("Chasse aux erreurs")) {
-      descriptionDefi = `Aide Nox à identifier les erreurs discrètement glissées dans les explications sur : ${conceptRef}.`;
+      descriptionDefi = `Identifie les erreurs discrètement glissées dans les explications sur : ${conceptRef}.`;
     } else if (modeJeu.includes("Combat") || modeJeu.includes("monstre")) {
       descriptionDefi = `Déclenche tes attaques élémentaires en répondant juste aux questions sur : ${titre} !`;
     } else if (modeJeu.includes("Construis")) {
-      descriptionDefi = `Récolte du bois et de la pierre à chaque bonne réponse sur : ${titre}.`;
+      descriptionDefi = `Récolte des ressources à chaque bonne réponse sur : ${titre}.`;
     } else if (modeJeu.includes("Détective")) {
       descriptionDefi = `Résous l'enquête en t'appuyant sur les indices du cours sur : ${conceptRef}.`;
     }
@@ -171,10 +167,10 @@ Génère entre 8 et 12 notions détaillées dans le tableau "notions".
   },
 
   // =========================================================================
-  // AGENT 4 : Le Ninja (Journal d'erreurs)
+  // AGENT 4 : Journal d'erreurs (Suivi pédagogique)
   // =========================================================================
   async surveillerErreurs(eleveId, erreurDetectee) {
-    console.log("🥷 Agent 4 (Ninja) : Enregistrement de l'erreur...");
+    console.log("🥷 Agent 4 : Enregistrement de l'erreur...");
     try {
       await addDoc(collection(db, "utilisateurs", eleveId, "erreurs_ninja"), {
         matiere: erreurDetectee.matiere || "Général",
@@ -182,7 +178,7 @@ Génère entre 8 et 12 notions détaillées dans le tableau "notions".
         timestamp: serverTimestamp()
       });
     } catch (e) {
-      console.error("Erreur Ninja :", e);
+      console.error("Erreur de suivi :", e);
     }
   }
 };
