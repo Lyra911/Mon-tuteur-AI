@@ -50,25 +50,23 @@ body {
     text-align: center;
 }
 
-/* Nox magique : flottaison et lueur */
+/* Nox magique */
 .nox {
-    width: 90px;
-    height: 90px;
+    width: 85px;
+    height: 85px;
     object-fit: contain;
-    animation:
-        flotter 4s ease-in-out infinite,
-        briller 2s ease-in-out infinite;
+    animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
 }
 
 @keyframes briller {
-    0% { filter: drop-shadow(0 0 10px #7FE7FF); }
-    50% { filter: drop-shadow(0 0 30px #E2A7FF); }
-    100% { filter: drop-shadow(0 0 10px #7FE7FF); }
+    0% { filter: drop-shadow(0 0 8px #7FE7FF); }
+    50% { filter: drop-shadow(0 0 25px #E2A7FF); }
+    100% { filter: drop-shadow(0 0 8px #7FE7FF); }
 }
 
 @keyframes flotter {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-12px); }
+    50% { transform: translateY(-10px); }
 }
 
 .header h1 {
@@ -120,47 +118,42 @@ body {
     transition: width 0.3s ease;
 }
 
-/* Zone du texte ou page de cours */
+/* Zone du texte */
 .book-area {
-    position: relative;
     background: rgba(10, 15, 35, 0.85);
     border: 2px dashed rgba(127, 231, 255, 0.35);
     border-radius: 20px;
     padding: 24px 20px;
-    min-height: 260px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.book-text {
+    min-height: 200px;
+    line-height: 1.9;
     font-size: 15px;
-    line-height: 1.8;
     color: #e2e8f0;
 }
 
-/* Cibles d'erreurs cliquables */
-.error-target {
-    display: inline;
-    padding: 2px 6px;
-    border-radius: 8px;
-    background: rgba(255, 95, 122, 0.2);
-    border-bottom: 2px dashed #ff5f7a;
+/* Mots cliquables INDISCERNABLES avant le clic */
+.word-click {
     cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 1px 4px;
+    transition: background 0.15s ease;
 }
 
-.error-target:hover {
-    background: rgba(255, 95, 122, 0.4);
-    transform: scale(1.03);
+.word-click:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
 
-.error-target.found {
-    background: rgba(108, 255, 149, 0.25);
-    border-bottom: 2px solid #6cff95;
+/* Couleurs révélées UNIQUEMENT après clic */
+.word-click.correct-error {
+    background: rgba(108, 255, 149, 0.3);
     color: #6cff95;
     text-decoration: line-through;
+    border-bottom: 2px solid #6cff95;
     cursor: default;
+}
+
+.word-click.wrong-click {
+    background: rgba(255, 95, 122, 0.3);
+    color: #ff8598;
 }
 
 button {
@@ -206,11 +199,12 @@ button:hover {
     </div>
 
     <div class="header">
-        <img class="nox" src="Images/Nox.png" alt="Nox">
+        <!-- Détection avec repli d'image -->
+        <img class="nox" id="nox-img" src="Images/Nox.png" onerror="if(this.src.indexOf('Images/Nox.png') !== -1) { this.src='images/nox.png'; } else { this.src='nox.png'; }" alt="Nox">
         <h1>Chasse aux erreurs</h1>
         <p>Aide Nox à débusquer les 3 erreurs cachées dans la leçon !</p>
         <div id="lesson-title" class="lesson-badge">
-            <i class="fa-solid fa-spinner fa-spin"></i> Chargement de la matière...
+            <i class="fa-solid fa-spinner fa-spin"></i> Chargement de la leçon...
         </div>
     </div>
 
@@ -224,11 +218,8 @@ button:hover {
             <div id="bar" class="progress-fill"></div>
         </div>
 
-        <!-- Zone de la leçon avec les pièges insérés dynamiquement -->
-        <div class="book-area">
-            <p id="lesson-content" class="book-text">
-                Analyse de la leçon en cours...
-            </p>
+        <div class="book-area" id="lesson-content">
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Analyse de ton document...</p>
         </div>
 
         <button onclick="finishGame()">
@@ -237,7 +228,7 @@ button:hover {
 
         <div id="reward" class="reward">
             ⭐ Bravo Coco !<br>
-            Tu as démasqué toutes les anomalies (+50 XP pour Nox) !
+            Toutes les erreurs ont été éliminées (+50 XP pour Nox) !
         </div>
     </div>
 
@@ -251,6 +242,12 @@ button:hover {
     const TOTAL_ERREURS = 3;
     let found = 0;
 
+    // Banques d'intrus variés pour alterner les parties
+    const BANQUE_INTRUS = [
+        "carré", "inversé", "inexistant", "facultatif", "immobile", 
+        "vertical", "horizontal", "artificiel", "négatif", "inutile"
+    ];
+
     async function chargerLecon() {
         const badge = document.getElementById("lesson-title");
         const content = document.getElementById("lesson-content");
@@ -263,57 +260,76 @@ button:hover {
             );
             const querySnapshot = await getDocs(q);
 
-            let titre = "Aide-mémoire de géographie";
-            let concept = "coordonnées";
+            let titre = "Leçon active";
+            let concepts = [];
+            let texteComplet = "";
 
             if (!querySnapshot.empty) {
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.titre) titre = data.titre;
-                    if (data.conceptsCles && data.conceptsCles.length > 0) {
-                        concept = data.conceptsCles[0];
-                    }
+                    if (data.conceptsCles) concepts = data.conceptsCles;
+                    if (data.texte) texteComplet = data.texte;
                 });
             }
 
             badge.innerHTML = `<i class="fa-solid fa-book-open"></i> ${titre}`;
-
-            // Génération d'un texte d'exercice lié au cours avec 3 pièges
-            content.innerHTML = `
-                Pour bien comprendre <strong>${titre}</strong>, rappelons les bases. 
-                Sur un planisphère, l'équateur sépare la Terre en deux 
-                <span class="error-target" onclick="findError(this)">triangles inversés</span>. 
-                De plus, pour déterminer l'emplacement exact de <em>${concept}</em>, on affirme à tort que 
-                <span class="error-target" onclick="findError(this)">les degrés de latitude n'ont aucune valeur</span>. 
-                Enfin, sache que le pôle Nord et le pôle Sud sont 
-                <span class="error-target" onclick="findError(this)">situés au centre exact de l'océan Pacifique</span>.
-            `;
+            genererDefiDynamique(titre, concepts, texteComplet);
 
         } catch (err) {
             console.error("Erreur Firestore :", err);
-            badge.textContent = "Mode Entraînement";
-            content.innerHTML = `
-                Voici un extrait à corriger : 
-                La Terre est <span class="error-target" onclick="findError(this)">parfaitement carrée</span>. 
-                Le soleil tourne <span class="error-target" onclick="findError(this)">autour d'une lampe de poche</span>. 
-                Et l'eau gèle à <span class="error-target" onclick="findError(this)">100 degrés au soleil</span>.
-            `;
+            badge.textContent = "Entraînement de secours";
+            genererDefiDynamique("Révision générale", ["notions", "règles", "repères"], "");
         }
     }
 
-    window.findError = function(element) {
-        if (element.classList.contains("found")) return;
+    function genererDefiDynamique(titre, concepts, texte) {
+        const content = document.getElementById("lesson-content");
 
-        element.classList.add("found");
-        found++;
+        // Tirage aléatoire de 3 intrus parmi la banque
+        const pieges = [...BANQUE_INTRUS].sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        // Sélection de concepts variés s'il y en a dans la fiche
+        const c1 = concepts[0] || "l'axe central";
+        const c2 = concepts[1] || "la latitude";
+        const c3 = concepts[2] || "l'hémisphère";
 
-        document.getElementById("count").innerText = found;
-        document.getElementById("bar").style.width = (found / TOTAL_ERREURS) * 100 + "%";
+        // Paragraphe généré avec plusieurs segments textuels cliquables
+        const phrases = [
+            `Dans le document sur <span class="word-click" onclick="clickWord(this, false)">${titre}</span>, `,
+            `on étudie comment organiser <span class="word-click" onclick="clickWord(this, false)">les repères essentiels</span>. `,
+            `Il est stipulé que <span class="word-click" onclick="clickWord(this, false)">${c1}</span> `,
+            `adopte toujours un format <span class="word-click" onclick="clickWord(this, true)">${pieges[0]}</span> `,
+            `pour faciliter l'orientation. Concernant <span class="word-click" onclick="clickWord(this, false)">${c2}</span>, `,
+            `certaines personnes pensent qu'il est <span class="word-click" onclick="clickWord(this, true)">${pieges[1]}</span> `,
+            `alors qu'il détermine la position exacte. Enfin, pour bien délimiter <span class="word-click" onclick="clickWord(this, false)">${c3}</span>, `,
+            `on évite d'utiliser un calcul <span class="word-click" onclick="clickWord(this, true)">${pieges[2]}</span> `,
+            `qui fausserait toute la carte.`
+        ];
+
+        content.innerHTML = phrases.join("");
+    }
+
+    window.clickWord = function(element, isError) {
+        if (element.classList.contains("correct-error")) return;
+
+        if (isError) {
+            element.classList.remove("wrong-click");
+            element.classList.add("correct-error");
+            found++;
+            document.getElementById("count").innerText = found;
+            document.getElementById("bar").style.width = (found / TOTAL_ERREURS) * 100 + "%";
+        } else {
+            element.classList.add("wrong-click");
+            setTimeout(() => {
+                element.classList.remove("wrong-click");
+            }, 800);
+        }
     };
 
     window.finishGame = function() {
         if (found < TOTAL_ERREURS) {
-            alert(`Il reste encore ${TOTAL_ERREURS - found} erreur(s) cachée(s) dans le texte !`);
+            alert(`Il reste encore ${TOTAL_ERREURS - found} erreur(s) à démasquer !`);
             return;
         }
 
