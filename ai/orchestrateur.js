@@ -1,4 +1,4 @@
-// --- CHEF D'ORCHESTRE DES AGENTS IA (AVEC SUPPORT MULTIPAGE & RELAIS SECURISE) ---
+// --- CHEF D'ORCHESTRE DES AGENTS IA (SUPPORT MULTIPAGE & ILLUSTRATIONS AUTO) ---
 
 import { db } from "../firebase.js"; 
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -9,7 +9,7 @@ const RELAIS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbvHkVR
 export const OrchestrateurAI = {
 
   // =========================================================================
-  // AGENT 1 : Vision & Analyse du document (Support 1 photo OU plusieurs pages PDF)
+  // AGENT 1 : Vision & Analyse du document (Extraction du cours + visuels)
   // =========================================================================
   async analyserFiche(eleveId, fichierUrl, nomFichier, imagesData) {
     console.log("👁️ Agent 1 (Vision) : Analyse approfondie du document...", nomFichier);
@@ -17,7 +17,7 @@ export const OrchestrateurAI = {
     let sujetPropre = nomFichier ? nomFichier.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : "Leçon";
     let donneesExtraites = null;
 
-    // Harmonise sous forme de tableau (qu'on reçoive 1 image Base64 ou une liste de pages)
+    // Harmonise sous forme de tableau qu'on reçoive 1 image ou plusieurs pages PDF
     const listePages = Array.isArray(imagesData) ? imagesData : [imagesData];
 
     const promptInstruction = `
@@ -40,6 +40,7 @@ Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette str
     {
       "concept": "Nom du concept ou terme clé",
       "definition": "Explication claire et vraie du concept selon le cours.",
+      "terme_recherche_visuelle": "Mots-clés précis en anglais pour trouver une image éducative ou un schéma (ex: 'plant cell diagram', 'roman gladiator shield', 'water cycle illustration')",
       "faux1": "Une affirmation fausse mais plausible sur ce concept",
       "faux2": "Une deuxième affirmation erronée sur ce concept"
     }
@@ -50,7 +51,6 @@ Génère l'ensemble des notions clés nécessaires pour maîtriser le chapitre c
 
     try {
       if (listePages.length > 0 && listePages[0]) {
-        // Préparation des "parts" : le prompt texte suivi de chaque page en inline_data
         const parts = [{ text: promptInstruction }];
 
         listePages.forEach((pageBase64) => {
@@ -91,7 +91,7 @@ Génère l'ensemble des notions clés nécessaires pour maîtriser le chapitre c
       console.warn("Échec de la communication avec le relais. Utilisation du repli local.", err);
     }
 
-    // Structure de secours si hors-ligne ou erreur
+    // Données de repli en cas de problème de réseau
     if (!donneesExtraites) {
       donneesExtraites = {
         titre: sujetPropre,
@@ -108,6 +108,7 @@ Génère l'ensemble des notions clés nécessaires pour maîtriser le chapitre c
           {
             concept: sujetPropre,
             definition: "Notion centrale étudiée au cours de ce chapitre.",
+            terme_recherche_visuelle: "school study education book",
             faux1: "est totalement inutile dans la matière",
             faux2: "fonctionne à l'inverse des règles établies"
           }
@@ -115,7 +116,7 @@ Génère l'ensemble des notions clés nécessaires pour maîtriser le chapitre c
       };
     }
 
-    // Sauvegarde dans Firestore pour l'élève actif
+    // Sauvegarde automatique dans Firestore pour l'élève
     await this.transmettreAuTuteur(eleveId, donneesExtraites, nomFichier);
     return donneesExtraites;
   },
