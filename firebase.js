@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getFirestore, collection, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import { getStorage, ref, uploadString, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
 const firebaseConfig = {
@@ -14,8 +13,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-const storage = getStorage(app);
-console.log("🔥 Architecture Pro Firebase & IA initialisée !");
+console.log("🔥 Architecture Pro Firestore & IA initialisée !");
 
 const ELEVE_ID = "coco";
 
@@ -63,7 +61,7 @@ window.lancerJeu = function(nomMode) {
   }
 };
 
-// Gestion de l'import universel (Images & PDF) dès que le DOM est prêt
+// Gestion de l'import instantané et direct vers Firestore
 document.addEventListener("DOMContentLoaded", () => {
   verifierMemoireNinjaPro();
 
@@ -73,9 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const fichier = event.target.files[0];
       
       if (fichier) {
-        const typeFichier = fichier.type;
         const nomFichier = fichier.name;
-        
         const previewZone = document.getElementById('preview-zone');
         const imagePreview = document.getElementById('image-preview');
         const texteAnalyse = document.getElementById('analysis-text');
@@ -85,16 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (texteAnalyse) {
           texteAnalyse.style.color = "#00f2fe";
-          texteAnalyse.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Stockage et analyse par les IA...';
+          texteAnalyse.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyse et enregistrement par les IA...';
         }
 
         try {
-          const storageRef = ref(storage, 'utilisateurs/' + ELEVE_ID + '/fiches/' + Date.now() + '_' + nomFichier);
-          let lienFichier = "";
           let base64Image = null;
 
-          if (typeFichier.startsWith('image/')) {
-            // Lecture et upload pour les images
+          if (fichier.type.startsWith('image/')) {
             const lecteur = new FileReader();
             lecteur.onload = async function(e) {
               base64Image = e.target.result;
@@ -102,44 +95,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 imagePreview.src = base64Image;
                 imagePreview.style.display = 'block';
               }
-
-              // Upload Storage en base64
-              await uploadString(storageRef, base64Image, 'data_url');
-              lienFichier = await getDownloadURL(storageRef);
-
-              // Appel de l'Agent 1 avec l'image
-              await OrchestrateurAI.analyserFiche(ELEVE_ID, lienFichier, nomFichier, base64Image);
-
-              if (texteAnalyse) {
-                texteAnalyse.style.color = "#4facfe";
-                texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fiche image analysée et structurée !';
-              }
             };
             lecteur.readAsDataURL(fichier);
+          }
 
-          } else if (typeFichier === 'application/pdf') {
-            // Upload direct du fichier PDF binaire dans Firebase Storage
-            await uploadBytes(storageRef, fichier);
-            lienFichier = await getDownloadURL(storageRef);
+          // Appel direct à l'orchestrateur pour enregistrer dans Firestore sans passer par Storage (Évite le CORS)
+          await OrchestrateurAI.analyserFiche(ELEVE_ID, "local_file", nomFichier, base64Image);
 
-            if (imagePreview) {
-              imagePreview.style.display = 'none'; // Pas d'aperçu image pour un PDF brut
-            }
-
-            // Appel de l'orchestrateur pour un PDF (l'Agent 1 gérera le mode document)
-            await OrchestrateurAI.analyserFiche(ELEVE_ID, lienFichier, nomFichier, null);
-
-            if (texteAnalyse) {
-              texteAnalyse.style.color = "#4facfe";
-              texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fichier PDF stocké et enregistré dans le Cloud !';
-            }
-          } else {
-            alert("Format non pris en charge. Veuillez choisir une image ou un PDF.");
-            if (texteAnalyse) texteAnalyse.innerHTML = '';
+          if (texteAnalyse) {
+            texteAnalyse.style.color = "#4facfe";
+            texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fiche analysée et enregistrée dans Firestore !';
           }
 
         } catch (erreur) {
-          console.error("Erreur de pipeline IA / Stockage : ", erreur);
+          console.error("Erreur pipeline : ", erreur);
           if (texteAnalyse) {
             texteAnalyse.style.color = "#ff5858";
             texteAnalyse.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erreur lors du traitement.';
