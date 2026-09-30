@@ -50,7 +50,7 @@ body {
     text-align: center;
 }
 
-/* Nox magique */
+/* Nox magique : flottaison et lueur */
 .nox {
     width: 85px;
     height: 85px;
@@ -118,7 +118,7 @@ body {
     transition: width 0.3s ease;
 }
 
-/* Zone du texte */
+/* Zone du texte de la leçon */
 .book-area {
     background: rgba(10, 15, 35, 0.85);
     border: 2px dashed rgba(127, 231, 255, 0.35);
@@ -130,7 +130,7 @@ body {
     color: #e2e8f0;
 }
 
-/* Mots cliquables INDISCERNABLES avant le clic */
+/* Mots d'apparence identique avant tout clic */
 .word-click {
     cursor: pointer;
     border-radius: 4px;
@@ -142,7 +142,7 @@ body {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* Couleurs révélées UNIQUEMENT après clic */
+/* Révélé uniquement si c'est une vraie erreur */
 .word-click.correct-error {
     background: rgba(108, 255, 149, 0.3);
     color: #6cff95;
@@ -151,6 +151,7 @@ body {
     cursor: default;
 }
 
+/* Surlignage bref en cas de mauvais clic */
 .word-click.wrong-click {
     background: rgba(255, 95, 122, 0.3);
     color: #ff8598;
@@ -199,8 +200,7 @@ button:hover {
     </div>
 
     <div class="header">
-        <!-- Détection avec repli d'image -->
-        <img class="nox" id="nox-img" src="Images/Nox.png" onerror="if(this.src.indexOf('Images/Nox.png') !== -1) { this.src='images/nox.png'; } else { this.src='nox.png'; }" alt="Nox">
+        <img class="nox" id="nox-img" src="images/Nox.png" alt="Nox">
         <h1>Chasse aux erreurs</h1>
         <p>Aide Nox à débusquer les 3 erreurs cachées dans la leçon !</p>
         <div id="lesson-title" class="lesson-badge">
@@ -242,7 +242,6 @@ button:hover {
     const TOTAL_ERREURS = 3;
     let found = 0;
 
-    // Banques d'intrus variés pour alterner les parties
     const BANQUE_INTRUS = [
         "carré", "inversé", "inexistant", "facultatif", "immobile", 
         "vertical", "horizontal", "artificiel", "négatif", "inutile"
@@ -286,15 +285,12 @@ button:hover {
     function genererDefiDynamique(titre, concepts, texte) {
         const content = document.getElementById("lesson-content");
 
-        // Tirage aléatoire de 3 intrus parmi la banque
         const pieges = [...BANQUE_INTRUS].sort(() => 0.5 - Math.random()).slice(0, 3);
         
-        // Sélection de concepts variés s'il y en a dans la fiche
         const c1 = concepts[0] || "l'axe central";
         const c2 = concepts[1] || "la latitude";
         const c3 = concepts[2] || "l'hémisphère";
 
-        // Paragraphe généré avec plusieurs segments textuels cliquables
         const phrases = [
             `Dans le document sur <span class="word-click" onclick="clickWord(this, false)">${titre}</span>, `,
             `on étudie comment organiser <span class="word-click" onclick="clickWord(this, false)">les repères essentiels</span>. `,
