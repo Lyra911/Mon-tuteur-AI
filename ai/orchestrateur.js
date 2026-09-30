@@ -1,4 +1,4 @@
-// --- CHEF D'ORCHESTRE DES 4 AGENTS IA (VERSION INSTANTANÉE & FIABLE) ---
+// --- CHEF D'ORCHESTRE DES 4 AGENTS IA (VERSION COMPLÈTE & OFFICIELLE) ---
 
 import { db } from "../firebase.js"; 
 import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -40,12 +40,27 @@ export const OrchestrateurAI = {
     }
   },
 
-  // AGENT 3 : Le Maître du Jeu
+  // AGENT 3 : Le Maître du Jeu (Intégration des 15 modes officiels)
   genererDefiJeu(modeJeu, notionsFiche) {
     console.log(`🎮 Agent 3 (Maître du Jeu) : Création instantanée du défi '${modeJeu}'`);
+    
+    let concepts = notionsFiche && notionsFiche.conceptsCles ? notionsFiche.conceptsCles : ["Notions générales"];
+    let descriptionDefi = `Relève le défi du mode ${modeJeu} en maîtrisant : ${concepts.join(', ')}`;
+
+    // Scénarios spécifiques pour les modes phares
+    if (modeJeu.includes("Détecte") || modeJeu.includes("Détective")) {
+      descriptionDefi = `🔍 Enquête au laboratoire : Trouve l'indice caché concernant "${concepts[0]}" pour résoudre le mystère du manuel !`;
+    } else if (modeJeu.includes("Chasse aux erreurs")) {
+      descriptionDefi = `🕵️‍♂️ Observe bien la page et aide Nox à dénicher les erreurs cachées sur le sujet : ${concepts[0]}.`;
+    } else if (modeJeu.includes("Combat éducatif")) {
+      descriptionDefi = `⚔️ Affronte l'arène des éléments en répondant correctement aux questions sur : ${concepts.join(', ')} !`;
+    } else if (modeJeu.includes("Construis ton monde")) {
+      descriptionDefi = `🏰 Réponds aux défis pour obtenir des ressources et bâtir ton royaume basé sur : ${concepts[0]}.`;
+    }
+
     return {
       jeu: modeJeu,
-      defi: `Affronte le défi basé sur : ${notionsFiche.conceptsCles.join(', ')}`
+      defi: descriptionDefi
     };
   },
 
