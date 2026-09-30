@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon-tuteur-AI - Arène de Jeu</title>
+    <title>Mon-tuteur-AI - Chasse aux erreurs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -22,6 +22,8 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
         .nox {
+            display: inline-block;
+            user-select: none;
             animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
         }
         @keyframes briller {
@@ -31,108 +33,171 @@
         }
         @keyframes flotter {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
+        }
+        .mot-piege {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+        .mot-piege:hover {
+            background: rgba(0, 242, 254, 0.2);
+            color: #00f2fe;
         }
     </style>
 </head>
 <body class="flex flex-col items-center justify-between p-6">
 
     <!-- En-tête -->
-    <header class="w-full max-w-lg flex items-center justify-between mb-6">
+    <header class="w-full max-w-lg flex items-center justify-between mb-4">
         <a href="index.html" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-cyan-300 font-semibold text-sm">
-            <i class="fa-solid fa-arrow-left"></i> Retour
+            <i class="fa-solid fa-arrow-left"></i> Retour au QG
         </a>
         <div class="flex items-center gap-2 bg-purple-900/40 px-4 py-2 rounded-xl border border-purple-500/30">
             <i class="fa-solid fa-star text-yellow-400"></i>
-            <span class="font-bold text-yellow-200 text-sm">Niveau 1 • 50 XP</span>
+            <span id="score-xp" class="font-bold text-yellow-200 text-sm">Niveau 1 • +50 XP</span>
         </div>
     </header>
 
     <!-- Zone principale -->
     <main class="w-full max-w-lg flex flex-col items-center text-center my-auto">
-        <!-- Nox animé qui flotte et brille -->
-        <div class="relative mb-6">
-            <div class="w-24 h-24 rounded-full bg-indigo-950/80 border-2 border-cyan-400 flex items-center justify-center text-5xl shadow-2xl nox">
-                ✨👻
-            </div>
+        
+        <!-- Illustration officielle de Nox animée -->
+        <div class="relative mb-4">
+            <img src="Images/Nox.png" alt="Nox" class="nox" style="width: 75px; height: 75px; object-fit: contain;">
         </div>
 
-        <!-- Titre du jeu -->
-        <h1 id="game-title" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-300 mb-2">
-            Chargement du monde...
+        <!-- Titre du jeu fixé -->
+        <h1 class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-300 mb-1">
+            1. Chasse aux erreurs
         </h1>
-        <p id="course-subject" class="text-slate-400 text-xs mb-6">Analyse des fiches de cours en cours...</p>
+        <p id="course-subject" class="text-cyan-300 text-xs font-semibold mb-5">
+            <i class="fa-solid fa-spinner fa-spin"></i> Recherche des cours de Coco...
+        </p>
 
-        <!-- Carte Défi -->
-        <div class="glass-card w-full p-6 text-left border-l-4 border-l-cyan-400 mb-6">
-            <div class="flex items-center gap-2 mb-2 text-cyan-400 font-bold text-sm">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Défi du Maître du Jeu :
-            </div>
-            <p id="game-challenge" class="text-base text-slate-200 leading-relaxed">
-                <i class="fa-solid fa-spinner fa-spin text-cyan-400"></i> Préparation de ton arène...
+        <!-- Message d'alerte si aucun cours n'a été scanné -->
+        <div id="no-lesson-card" class="glass-card w-full p-6 text-center border-l-4 border-l-amber-400 mb-6 hidden">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-3xl mb-3"></i>
+            <h3 class="text-base font-bold text-amber-200 mb-2">Aucune leçon scannée !</h3>
+            <p class="text-slate-300 text-xs mb-4">
+                Nox a besoin d'une leçon pour générer tes pièges. Scanne d'abord une fiche ou un cours.
             </p>
+            <a href="index.html" class="inline-block py-2 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
+                <i class="fa-solid fa-camera mr-2"></i> Aller scanner une leçon
+            </a>
         </div>
 
-        <!-- Bouton d'action -->
-        <div class="w-full">
-            <button onclick="validerDefi()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 hover:opacity-90 font-bold text-slate-900 shadow-lg transition transform active:scale-95 flex items-center justify-between">
-                <span><i class="fa-solid fa-check-circle text-slate-900 mr-2"></i> Valider et aider Nox</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
+        <!-- Zone du Défi Interactif -->
+        <div id="game-arena" class="glass-card w-full p-6 text-left border-l-4 border-l-pink-500 mb-6">
+            <div class="flex items-center gap-2 mb-2 text-pink-400 font-bold text-sm">
+                <i class="fa-solid fa-bullseye"></i> Mission de Nox :
+            </div>
+            <p id="instruction-text" class="text-xs text-slate-300 mb-4">
+                Un intrus s'est glissé dans la leçon ci-dessous. Clique sur le mot erroné pour restaurer la vérité !
+            </p>
+
+            <!-- Phrase ou paragraphe avec piège -->
+            <div id="text-container" class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 text-sm leading-relaxed text-slate-200 mb-4">
+                <i class="fa-solid fa-spinner fa-spin text-pink-400"></i> Génération du défi en cours...
+            </div>
+
+            <!-- Retour d'information (Feedback) -->
+            <div id="feedback-msg" class="text-xs font-bold text-center hidden"></div>
         </div>
+
     </main>
 
     <!-- Pied de page -->
-    <footer class="w-full max-w-lg text-center text-xs text-slate-500 mt-6">
-        Mon-tuteur-AI • Aventure Kawaii
+    <footer class="w-full max-w-lg text-center text-xs text-slate-500 mt-4">
+        Mon-tuteur-AI • Chasse aux pièges Kawaii
     </footer>
 
-    <!-- Script de récupération Firestore et Orchestrateur -->
+    <!-- Logique Firestore & Génération de pièges -->
     <script type="module">
         import { db } from "./firebase.js";
         import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-        import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
         const ELEVE_ID = "coco";
-        const params = new URLSearchParams(window.location.search);
-        const nomMode = params.get('mode') || "Aventure générale";
+        const gameArena = document.getElementById('game-arena');
+        const noLessonCard = document.getElementById('no-lesson-card');
+        const courseSubject = document.getElementById('course-subject');
+        const textContainer = document.getElementById('text-container');
+        const feedbackMsg = document.getElementById('feedback-msg');
 
-        document.getElementById('game-title').textContent = nomMode;
-
-        async function chargerDefi() {
+        async function chargerDefiChasseAuxErreurs() {
             try {
-                const q = query(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"), orderBy("timestamp", "desc"), limit(1));
+                // 1. Lire la dernière fiche de cours dans Firestore
+                const q = query(
+                    collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"),
+                    orderBy("timestamp", "desc"),
+                    limit(1)
+                );
                 const querySnapshot = await getDocs(q);
 
-                let notionsFic = { conceptsCles: ["Notions générales"] };
-                let titreCours = "Cours général";
-
-                if (!querySnapshot.empty) {
-                    querySnapshot.forEach((doc) => {
-                        let data = doc.data();
-                        if (data.conceptsCles) notionsFic.conceptsCles = data.conceptsCles;
-                        if (data.titre) titreCours = data.titre;
-                    });
+                if (querySnapshot.empty) {
+                    // Aucune matière trouvée
+                    courseSubject.textContent = "Aucun cours actif trouvé";
+                    gameArena.classList.add('hidden');
+                    noLessonCard.classList.remove('hidden');
+                    return;
                 }
 
-                document.getElementById('course-subject').textContent = `Matière active : ${titreCours}`;
+                let fiche = null;
+                querySnapshot.forEach(doc => fiche = doc.data());
 
-                // Appel de l'Agent 3
-                let defi = OrchestrateurAI.genererDefiJeu(nomMode, notionsFic);
-                document.getElementById('game-challenge').textContent = defi.defi;
+                const titre = fiche.titre || "Leçon en cours";
+                const concepts = (fiche.conceptsCles && fiche.conceptsCles.length > 0) 
+                    ? fiche.conceptsCles 
+                    : ["les règles fondamentales de cette matière"];
+
+                courseSubject.innerHTML = `<i class="fa-solid fa-book-open mr-1"></i> Matière : <strong>${titre}</strong>`;
+
+                // 2. Création dynamique de la phrase avec un piège basé sur la leçon
+                preparerExercice(titre, concepts);
 
             } catch (err) {
-                console.error("Erreur :", err);
-                document.getElementById('game-challenge').textContent = "Prêt à relever le défi ! Observe bien et réponds aux questions.";
+                console.error("Erreur Firestore :", err);
+                courseSubject.textContent = "Erreur de connexion aux leçons";
+                textContainer.textContent = "Impossible de charger les notions de la leçon pour le moment.";
             }
         }
 
-        window.validerDefi = function() {
-            alert("✨ Bravo ! Défi réussi avec succès (+50 XP) !");
-            window.location.href = "index.html";
+        function preparerExercice(titre, concepts) {
+            const conceptPrincipal = concepts[0];
+            const piege = "FAUX_" + conceptPrincipal;
+
+            textContainer.innerHTML = `
+                Dans le cadre de l'étude sur <strong>${titre}</strong>, Nox a remarqué cette affirmation : 
+                « Il est scientifiquement prouvé que 
+                <span class="mot-piege underline decoration-pink-500/50" onclick="verifierReponse(false, this)">l'ensemble</span> 
+                des propriétés de 
+                <span class="mot-piege underline decoration-pink-500/50" onclick="verifierReponse(true, this, '${conceptPrincipal}')">${conceptPrincipal} est complètement inutile et faux</span> 
+                dans la nature. »
+            `;
+        }
+
+        window.verifierReponse = function(estErreur, element, concept) {
+            if (estErreur) {
+                element.style.background = "#22c55e";
+                element.style.color = "#070b19";
+                element.textContent = `${concept} est essentiel et vérifié !`;
+                
+                feedbackMsg.className = "text-xs font-bold text-center text-green-400 mt-2 block";
+                feedbackMsg.innerHTML = "🎉 Bien joué Coco ! Tu as démasqué le piège et restauré la bonne notion (+50 XP) !";
+                
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 2200);
+            } else {
+                element.style.background = "#ef4444";
+                element.style.color = "#ffffff";
+                feedbackMsg.className = "text-xs font-bold text-center text-red-400 mt-2 block";
+                feedbackMsg.innerHTML = "❌ Ce n'est pas cette partie qui est fausse. Regarde bien l'autre proposition !";
+            }
         };
 
-        chargerDefi();
+        chargerDefiChasseAuxErreurs();
     </script>
 </body>
 </html>
