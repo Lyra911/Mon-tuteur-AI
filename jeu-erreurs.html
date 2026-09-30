@@ -1,203 +1,330 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon-tuteur-AI - Chasse aux erreurs</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            background: radial-gradient(circle at top, #1e1b4b 0%, #070b19 100%);
-            color: #f8fafc;
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-        }
-        .glass-card {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-        .nox {
-            display: inline-block;
-            user-select: none;
-            animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
-        }
-        @keyframes briller {
-            0% { filter: drop-shadow(0 0 10px #7FE7FF); }
-            50% { filter: drop-shadow(0 0 30px #E2A7FF); }
-            100% { filter: drop-shadow(0 0 10px #7FE7FF); }
-        }
-        @keyframes flotter {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-        }
-        .mot-piege {
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-radius: 6px;
-            padding: 2px 6px;
-        }
-        .mot-piege:hover {
-            background: rgba(0, 242, 254, 0.2);
-            color: #00f2fe;
-        }
-    </style>
-</head>
-<body class="flex flex-col items-center justify-between p-6">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nox - Chasse aux erreurs</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- En-tête -->
-    <header class="w-full max-w-lg flex items-center justify-between mb-4">
-        <a href="index.html" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-cyan-300 font-semibold text-sm">
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(180deg, #13174a, #262d84, #3f4dbf);
+    color: white;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+    padding: 20px;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.btn-retour {
+    background: rgba(255, 255, 255, 0.15);
+    color: #7fe7ff;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+}
+
+.btn-retour:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.header {
+    text-align: center;
+}
+
+/* Nox magique : flottaison et lueur */
+.nox {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    animation:
+        flotter 4s ease-in-out infinite,
+        briller 2s ease-in-out infinite;
+}
+
+@keyframes briller {
+    0% { filter: drop-shadow(0 0 10px #7FE7FF); }
+    50% { filter: drop-shadow(0 0 30px #E2A7FF); }
+    100% { filter: drop-shadow(0 0 10px #7FE7FF); }
+}
+
+@keyframes flotter {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+}
+
+.header h1 {
+    margin: 10px 0 4px 0;
+    font-size: 24px;
+}
+
+.lesson-badge {
+    display: inline-block;
+    background: rgba(127, 231, 255, 0.15);
+    color: #7fe7ff;
+    border: 1px solid rgba(127, 231, 255, 0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 25px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.progress {
+    width: 100%;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #7fe7ff, #c896ff);
+    transition: width 0.3s ease;
+}
+
+/* Zone du texte ou page de cours */
+.book-area {
+    position: relative;
+    background: rgba(10, 15, 35, 0.85);
+    border: 2px dashed rgba(127, 231, 255, 0.35);
+    border-radius: 20px;
+    padding: 24px 20px;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.book-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #e2e8f0;
+}
+
+/* Cibles d'erreurs cliquables */
+.error-target {
+    display: inline;
+    padding: 2px 6px;
+    border-radius: 8px;
+    background: rgba(255, 95, 122, 0.2);
+    border-bottom: 2px dashed #ff5f7a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.error-target:hover {
+    background: rgba(255, 95, 122, 0.4);
+    transform: scale(1.03);
+}
+
+.error-target.found {
+    background: rgba(108, 255, 149, 0.25);
+    border-bottom: 2px solid #6cff95;
+    color: #6cff95;
+    text-decoration: line-through;
+    cursor: default;
+}
+
+button {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: #070b19;
+    font-weight: 700;
+    font-size: 16px;
+    margin-top: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+    transition: 0.2s ease;
+}
+
+button:hover {
+    opacity: 0.92;
+}
+
+.reward {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #6cff95;
+    margin-top: 20px;
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="top-bar">
+        <a href="index.html" class="btn-retour">
             <i class="fa-solid fa-arrow-left"></i> Retour au QG
         </a>
-        <div class="flex items-center gap-2 bg-purple-900/40 px-4 py-2 rounded-xl border border-purple-500/30">
-            <i class="fa-solid fa-star text-yellow-400"></i>
-            <span id="score-xp" class="font-bold text-yellow-200 text-sm">Niveau 1 • +50 XP</span>
+        <div style="font-size: 13px; color: #ffd166; font-weight: 700;">
+            <i class="fa-solid fa-star"></i> +50 XP
         </div>
-    </header>
+    </div>
 
-    <!-- Zone principale -->
-    <main class="w-full max-w-lg flex flex-col items-center text-center my-auto">
-        
-        <!-- Illustration officielle de Nox animée -->
-        <div class="relative mb-4">
-            <img src="Images/Nox.png" alt="Nox" class="nox" style="width: 75px; height: 75px; object-fit: contain;">
+    <div class="header">
+        <img class="nox" src="Images/Nox.png" alt="Nox">
+        <h1>Chasse aux erreurs</h1>
+        <p>Aide Nox à débusquer les 3 erreurs cachées dans la leçon !</p>
+        <div id="lesson-title" class="lesson-badge">
+            <i class="fa-solid fa-spinner fa-spin"></i> Chargement de la matière...
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="status-bar">
+            <span>Erreurs trouvées :</span>
+            <span><span id="count">0</span> / 3</span>
         </div>
 
-        <!-- Titre du jeu fixé -->
-        <h1 class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-300 mb-1">
-            1. Chasse aux erreurs
-        </h1>
-        <p id="course-subject" class="text-cyan-300 text-xs font-semibold mb-5">
-            <i class="fa-solid fa-spinner fa-spin"></i> Recherche des cours de Coco...
-        </p>
+        <div class="progress">
+            <div id="bar" class="progress-fill"></div>
+        </div>
 
-        <!-- Message d'alerte si aucun cours n'a été scanné -->
-        <div id="no-lesson-card" class="glass-card w-full p-6 text-center border-l-4 border-l-amber-400 mb-6 hidden">
-            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-3xl mb-3"></i>
-            <h3 class="text-base font-bold text-amber-200 mb-2">Aucune leçon scannée !</h3>
-            <p class="text-slate-300 text-xs mb-4">
-                Nox a besoin d'une leçon pour générer tes pièges. Scanne d'abord une fiche ou un cours.
+        <!-- Zone de la leçon avec les pièges insérés dynamiquement -->
+        <div class="book-area">
+            <p id="lesson-content" class="book-text">
+                Analyse de la leçon en cours...
             </p>
-            <a href="index.html" class="inline-block py-2 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
-                <i class="fa-solid fa-camera mr-2"></i> Aller scanner une leçon
-            </a>
         </div>
 
-        <!-- Zone du Défi Interactif -->
-        <div id="game-arena" class="glass-card w-full p-6 text-left border-l-4 border-l-pink-500 mb-6">
-            <div class="flex items-center gap-2 mb-2 text-pink-400 font-bold text-sm">
-                <i class="fa-solid fa-bullseye"></i> Mission de Nox :
-            </div>
-            <p id="instruction-text" class="text-xs text-slate-300 mb-4">
-                Un intrus s'est glissé dans la leçon ci-dessous. Clique sur le mot erroné pour restaurer la vérité !
-            </p>
+        <button onclick="finishGame()">
+            Vérifier et restaurer la page
+        </button>
 
-            <!-- Phrase ou paragraphe avec piège -->
-            <div id="text-container" class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 text-sm leading-relaxed text-slate-200 mb-4">
-                <i class="fa-solid fa-spinner fa-spin text-pink-400"></i> Génération du défi en cours...
-            </div>
-
-            <!-- Retour d'information (Feedback) -->
-            <div id="feedback-msg" class="text-xs font-bold text-center hidden"></div>
+        <div id="reward" class="reward">
+            ⭐ Bravo Coco !<br>
+            Tu as démasqué toutes les anomalies (+50 XP pour Nox) !
         </div>
+    </div>
 
-    </main>
+</div>
 
-    <!-- Pied de page -->
-    <footer class="w-full max-w-lg text-center text-xs text-slate-500 mt-4">
-        Mon-tuteur-AI • Chasse aux pièges Kawaii
-    </footer>
+<script type="module">
+    import { db } from "./firebase.js";
+    import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-    <!-- Logique Firestore & Génération de pièges -->
-    <script type="module">
-        import { db } from "./firebase.js";
-        import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    const ELEVE_ID = "coco";
+    const TOTAL_ERREURS = 3;
+    let found = 0;
 
-        const ELEVE_ID = "coco";
-        const gameArena = document.getElementById('game-arena');
-        const noLessonCard = document.getElementById('no-lesson-card');
-        const courseSubject = document.getElementById('course-subject');
-        const textContainer = document.getElementById('text-container');
-        const feedbackMsg = document.getElementById('feedback-msg');
+    async function chargerLecon() {
+        const badge = document.getElementById("lesson-title");
+        const content = document.getElementById("lesson-content");
 
-        async function chargerDefiChasseAuxErreurs() {
-            try {
-                // 1. Lire la dernière fiche de cours dans Firestore
-                const q = query(
-                    collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"),
-                    orderBy("timestamp", "desc"),
-                    limit(1)
-                );
-                const querySnapshot = await getDocs(q);
+        try {
+            const q = query(
+                collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"),
+                orderBy("timestamp", "desc"),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
 
-                if (querySnapshot.empty) {
-                    // Aucune matière trouvée
-                    courseSubject.textContent = "Aucun cours actif trouvé";
-                    gameArena.classList.add('hidden');
-                    noLessonCard.classList.remove('hidden');
-                    return;
-                }
+            let titre = "Aide-mémoire de géographie";
+            let concept = "coordonnées";
 
-                let fiche = null;
-                querySnapshot.forEach(doc => fiche = doc.data());
-
-                const titre = fiche.titre || "Leçon en cours";
-                const concepts = (fiche.conceptsCles && fiche.conceptsCles.length > 0) 
-                    ? fiche.conceptsCles 
-                    : ["les règles fondamentales de cette matière"];
-
-                courseSubject.innerHTML = `<i class="fa-solid fa-book-open mr-1"></i> Matière : <strong>${titre}</strong>`;
-
-                // 2. Création dynamique de la phrase avec un piège basé sur la leçon
-                preparerExercice(titre, concepts);
-
-            } catch (err) {
-                console.error("Erreur Firestore :", err);
-                courseSubject.textContent = "Erreur de connexion aux leçons";
-                textContainer.textContent = "Impossible de charger les notions de la leçon pour le moment.";
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.titre) titre = data.titre;
+                    if (data.conceptsCles && data.conceptsCles.length > 0) {
+                        concept = data.conceptsCles[0];
+                    }
+                });
             }
-        }
 
-        function preparerExercice(titre, concepts) {
-            const conceptPrincipal = concepts[0];
-            const piege = "FAUX_" + conceptPrincipal;
+            badge.innerHTML = `<i class="fa-solid fa-book-open"></i> ${titre}`;
 
-            textContainer.innerHTML = `
-                Dans le cadre de l'étude sur <strong>${titre}</strong>, Nox a remarqué cette affirmation : 
-                « Il est scientifiquement prouvé que 
-                <span class="mot-piege underline decoration-pink-500/50" onclick="verifierReponse(false, this)">l'ensemble</span> 
-                des propriétés de 
-                <span class="mot-piege underline decoration-pink-500/50" onclick="verifierReponse(true, this, '${conceptPrincipal}')">${conceptPrincipal} est complètement inutile et faux</span> 
-                dans la nature. »
+            // Génération d'un texte d'exercice lié au cours avec 3 pièges
+            content.innerHTML = `
+                Pour bien comprendre <strong>${titre}</strong>, rappelons les bases. 
+                Sur un planisphère, l'équateur sépare la Terre en deux 
+                <span class="error-target" onclick="findError(this)">triangles inversés</span>. 
+                De plus, pour déterminer l'emplacement exact de <em>${concept}</em>, on affirme à tort que 
+                <span class="error-target" onclick="findError(this)">les degrés de latitude n'ont aucune valeur</span>. 
+                Enfin, sache que le pôle Nord et le pôle Sud sont 
+                <span class="error-target" onclick="findError(this)">situés au centre exact de l'océan Pacifique</span>.
+            `;
+
+        } catch (err) {
+            console.error("Erreur Firestore :", err);
+            badge.textContent = "Mode Entraînement";
+            content.innerHTML = `
+                Voici un extrait à corriger : 
+                La Terre est <span class="error-target" onclick="findError(this)">parfaitement carrée</span>. 
+                Le soleil tourne <span class="error-target" onclick="findError(this)">autour d'une lampe de poche</span>. 
+                Et l'eau gèle à <span class="error-target" onclick="findError(this)">100 degrés au soleil</span>.
             `;
         }
+    }
 
-        window.verifierReponse = function(estErreur, element, concept) {
-            if (estErreur) {
-                element.style.background = "#22c55e";
-                element.style.color = "#070b19";
-                element.textContent = `${concept} est essentiel et vérifié !`;
-                
-                feedbackMsg.className = "text-xs font-bold text-center text-green-400 mt-2 block";
-                feedbackMsg.innerHTML = "🎉 Bien joué Coco ! Tu as démasqué le piège et restauré la bonne notion (+50 XP) !";
-                
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 2200);
-            } else {
-                element.style.background = "#ef4444";
-                element.style.color = "#ffffff";
-                feedbackMsg.className = "text-xs font-bold text-center text-red-400 mt-2 block";
-                feedbackMsg.innerHTML = "❌ Ce n'est pas cette partie qui est fausse. Regarde bien l'autre proposition !";
-            }
-        };
+    window.findError = function(element) {
+        if (element.classList.contains("found")) return;
 
-        chargerDefiChasseAuxErreurs();
-    </script>
+        element.classList.add("found");
+        found++;
+
+        document.getElementById("count").innerText = found;
+        document.getElementById("bar").style.width = (found / TOTAL_ERREURS) * 100 + "%";
+    };
+
+    window.finishGame = function() {
+        if (found < TOTAL_ERREURS) {
+            alert(`Il reste encore ${TOTAL_ERREURS - found} erreur(s) cachée(s) dans le texte !`);
+            return;
+        }
+
+        document.getElementById("reward").style.display = "block";
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 2500);
+    };
+
+    chargerLecon();
+</script>
+
 </body>
 </html>
