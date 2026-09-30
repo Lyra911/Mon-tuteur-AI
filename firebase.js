@@ -1,191 +1,128 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mon Tuteur Magique - Nox</title>
-  
-  <!-- Polices et Icônes -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, collection, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
-  <!-- Styles complémentaires pour la grille, la progression et le tiroir des jeux -->
-  <style>
-    .progress-labels { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; font-weight: 600; }
-    .progress-bar-bg { height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; width: 68%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan)); border-radius: 10px; box-shadow: 0 0 10px rgba(0, 242, 254, 0.5); }
+const firebaseConfig = {
+  apiKey: "AIzaSyD0GbueWsIm8kaUnB6sZYykYSZl11s2JTs",
+  authDomain: "tuteur-ai.firebaseapp.com",
+  projectId: "tuteur-ai",
+  storageBucket: "tuteur-ai.firebasestorage.app",
+  messagingSenderId: "1025983965857",
+  appId: "1:1025983965857:web:121d32b494c8433f9f1ee0"
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app); // Exporté pour l'orchestrateur
+const storage = getStorage(app);
+console.log("🔥 Architecture Pro Firebase & IA initialisée !");
+
+const ELEVE_ID = "coco";
+
+// Système Ninja structuré avec sécurité anti-null
+async function verifierMemoireNinjaPro() {
+  let zoneAlerte = document.getElementById('ninja-alert');
+  let listeErreurs = document.getElementById('erreurs-list');
+  
+  // Si les éléments ne sont pas encore dans le DOM, on arrête pour éviter le bug
+  if (!zoneAlerte || !listeErreurs) return;
+  
+  try {
+    const querySnapshot = await getDocs(collection(db, "utilisateurs", ELEVE_ID, "erreurs_ninja"));
     
-    .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-    .game-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; cursor: pointer; transition: all 0.3s ease; }
-    .game-card:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--neon-cyan); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2); }
-    .game-card i { font-size: 22px; margin-bottom: 8px; }
-    .game-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #fff; }
-    .game-card p { font-size: 11px; color: var(--text-muted); }
-
-    /* Styles pour la section cachée des autres jeux */
-    #extra-games { display: none; }
-    .btn-toggle-games {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--glass-border);
-      color: var(--neon-cyan);
-      width: 100%;
-      padding: 10px;
-      border-radius: 12px;
-      margin-top: 12px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 12px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.2s;
+    if (!querySnapshot.empty) {
+      listeErreurs.innerHTML = ''; 
+      querySnapshot.forEach((docInfos) => {
+        let erreur = docInfos.data();
+        let li = document.createElement('li');
+        li.textContent = erreur.matiere + " : " + erreur.detail;
+        listeErreurs.appendChild(li);
+      });
+      zoneAlerte.style.display = 'block';
+    } else {
+      zoneAlerte.style.display = 'none';
     }
-    .btn-toggle-games:hover {
-      background: rgba(0, 242, 254, 0.15);
-    }
-  </style>
-</head>
-<body>
+  } catch (e) {
+    console.log("Chargement Ninja en attente de connexion Firestore...");
+  }
+}
 
-  <div class="phone-container">
-    <div class="notch"></div>
-
-    <!-- En-tête Nox Kawaii -->
-    <div class="nox-header">
-      <div class="nox-title">
-        <h1>Bonjour Coco ! ✨</h1>
-        <p>Prêt pour de nouvelles aventures ?</p>
-      </div>
-      <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
-        <i class="fa-solid fa-bell" style="color: var(--neon-cyan); font-size: 20px;"></i>
-      </div>
-    </div>
-
-    <!-- Zone de contenu (Scrollable) -->
-    <div class="app-content">
-      
-      <!-- Carte Compagnon Nox avec la vraie image -->
-      <div class="glass-card" style="display: flex; gap: 15px; align-items: center; background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(15, 23, 42, 0.4) 100%);">
-        <img src="images/Nox.png" alt="Nox" style="width: 55px; height: 55px; object-fit: contain; filter: drop-shadow(0 0 12px var(--neon-cyan)); border-radius: 50%;">
-        <div>
-          <h3 style="font-size: 16px; margin-bottom: 4px; color: var(--neon-cyan);">Nox est avec toi !</h3>
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">On continue ? Encore une petite leçon !</p>
-        </div>
-      </div>
-
-      <!-- Carte Suivi Ninja & Messages Tuteur (Connecté à Firebase) -->
-      <div class="glass-card" id="ninja-alert" style="display: none; border-color: rgba(255, 88, 88, 0.4); background: rgba(255, 88, 88, 0.05);">
-        <h3 id="tutor-title" style="font-size: 15px; color: #ff5858; margin-bottom: 6px;"><i class="fa-solid fa-shield-cat"></i> Alerte Ninja</h3>
-        <p id="tutor-message" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Analyse des points à renforcer...</p>
-        <ul id="erreurs-list" style="padding-left: 18px; font-size: 12px; color: #fff;"></ul>
-      </div>
-
-      <!-- Carte Progression -->
-      <div class="glass-card">
-        <div class="progress-labels">
-          <span>Progression globale</span>
-          <span style="color: var(--neon-cyan);">68%</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill"></div>
-        </div>
-      </div>
-
-      <!-- Carte Zone Scanner -->
-      <div class="glass-card" style="text-align: center;">
-        <i class="fa-solid fa-camera-retro" style="font-size: 32px; color: var(--neon-blue); margin-bottom: 12px; filter: drop-shadow(0 0 8px var(--neon-blue));"></i>
-        <h3 style="font-size: 16px; margin-bottom: 6px;">Dossier Fiches & Matière</h3>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 18px;">Importe tes cours pour que Nox les analyse.</p>
-        
-        <input type="file" id="camera-input" accept="image/*,.pdf" style="display: none;">
-        <button class="btn-neon" onclick="document.getElementById('camera-input').click()" style="width: 100%;">
-          <i class="fa-solid fa-plus"></i> Analyser un cours
-        </button>
-        
-        <!-- Zone de prévisualisation requise par firebase.js -->
-        <div id="preview-zone" style="display: none; margin-top: 15px;">
-          <img id="image-preview" style="width: 100%; border-radius: 12px; display: none; border: 1px solid var(--glass-border);" />
-        </div>
-        
-        <p id="analysis-text" style="font-size: 13px; margin-top: 15px; font-weight: 600;"></p>
-      </div>
-
-      <!-- Carte Grille des 15 Mondes & Jeux -->
-      <div class="glass-card">
-        <h3 style="font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-gamepad" style="color: var(--neon-cyan);"></i> Les 15 Mondes
-        </h3>
-        <p style="font-size: 12px; color: var(--text-muted);">Choisis ton aventure interactive :</p>
-        
-        <!-- Les 6 premiers jeux visibles -->
-        <div class="games-grid">
-          <div class="game-card" onclick="lancerJeu('Compagnon IA')"><i class="fa-solid fa-dragon" style="color: #fda085;"></i><h4>Compagnon IA</h4><p>Nourris ta créature.</p></div>
-          <div class="game-card" onclick="lancerJeu('Donjon Magique')"><i class="fa-solid fa-dungeon" style="color: #a18cd1;"></i><h4>2. Donjons</h4><p>Donjon unique.</p></div>
-          <div class="game-card" onclick="lancerJeu('Chasse aux erreurs')"><i class="fa-solid fa-bullseye" style="color: #ff5858;"></i><h4>3. Chasse pièges</h4><p>Trouve les erreurs.</p></div>
-          <div class="game-card" onclick="lancerJeu('Combat de monstres')"><i class="fa-solid fa-wand-sparkles" style="color: #4facfe;"></i><h4>4. Combat</h4><p>Sortilège magique.</p></div>
-          <div class="game-card" onclick="lancerJeu('Détective scientifique')"><i class="fa-solid fa-magnifying-glass" style="color: #f6d365;"></i><h4>5. Détective</h4><p>Résous l'enquête.</p></div>
-          <div class="game-card" onclick="lancerJeu('Construis ton monde')"><i class="fa-solid fa-helmet-safety" style="color: #00f2fe;"></i><h4>6. Bâtisseur</h4><p>Gagne des ressources.</p></div>
-        </div>
-
-        <!-- Les 9 jeux suivants (masqués par défaut) -->
-        <div id="extra-games">
-          <div class="games-grid">
-            <div class="game-card" onclick="lancerJeu('Puzzle intelligent')"><i class="fa-solid fa-puzzle-piece" style="color: #fbc2eb;"></i><h4>7. Puzzle</h4><p>Reconstitue l'image.</p></div>
-            <div class="game-card" onclick="lancerJeu('Cartes à collectionner')"><i class="fa-solid fa-clone" style="color: #fda085;"></i><h4>8. Cartes clés</h4><p>Bâtis ton set.</p></div>
-            <div class="game-card" onclick="lancerJeu('Voyage mondial')"><i class="fa-solid fa-earth-americas" style="color: #4facfe;"></i><h4>9. Voyage</h4><p>Nouvelles destinations.</p></div>
-            <div class="game-card" onclick="lancerJeu('Simulation pro')"><i class="fa-solid fa-user-tie" style="color: #a18cd1;"></i><h4>10. Simulation</h4><p>Incarne un rôle.</p></div>
-            <div class="game-card" onclick="lancerJeu('Course éducative')"><i class="fa-solid fa-flag-checkered" style="color: #f6d365;"></i><h4>11. Course</h4><p>Avance ton vaisseau.</p></div>
-            <div class="game-card" onclick="lancerJeu('Mémoire évolutive')"><i class="fa-solid fa-brain" style="color: #ff5858;"></i><h4>12. Mémoire</h4><p>Retiens tout.</p></div>
-            <div class="game-card" onclick="lancerJeu('Tower Defense')"><i class="fa-solid fa-chess-rook" style="color: #00f2fe;"></i><h4>13. Tower Defense</h4><p>Place des tours.</p></div>
-            <div class="game-card" onclick="lancerJeu('Style Pokémon')"><i class="fa-solid fa-paw" style="color: #fbc2eb;"></i><h4>14. Pokémon</h4><p>Fais évoluer.</p></div>
-            <div class="game-card" onclick="lancerJeu('Livre interactif')"><i class="fa-solid fa-book-open-reader" style="color: #fda085;"></i><h4>15. Héros</h4><p>Vis l'histoire.</p></div>
-          </div>
-        </div>
-
-        <!-- Bouton flèche pour dérouler / enrouler les jeux -->
-        <button class="btn-toggle-games" id="toggle-btn" onclick="toggleGames()">
-          <span id="toggle-text">Voir les 9 autres mondes</span> <i class="fa-solid fa-chevron-down" id="toggle-icon"></i>
-        </button>
-      </div>
-      
-    </div>
-
-    <!-- Barre de Navigation inférieure -->
-    <div class="nav-bar">
-      <div class="nav-item active"><i class="fa-solid fa-house"></i>Accueil</div>
-      <div class="nav-item"><i class="fa-solid fa-book-open"></i>Cours</div>
-      <div class="nav-item" style="position: relative; top: -20px;">
-        <div style="background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan)); width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #070b19; font-size: 24px; box-shadow: 0 8px 20px rgba(0, 242, 254, 0.5); cursor: pointer;">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-        </div>
-      </div>
-      <div class="nav-item"><i class="fa-solid fa-chart-simple"></i>Stats</div>
-      <div class="nav-item"><i class="fa-solid fa-ellipsis"></i>Plus</div>
-    </div>
-  </div>
+window.lancerJeu = function(nomMode) {
+  let messageTuteur = document.getElementById('tutor-message');
+  let titreTuteur = document.getElementById('tutor-title');
+  let zoneAlerte = document.getElementById('ninja-alert');
   
-  <!-- Script pour dérouler les jeux -->
-  <script>
-    function toggleGames() {
-      const extraGames = document.getElementById('extra-games');
-      const toggleText = document.getElementById('toggle-text');
-      const toggleIcon = document.getElementById('toggle-icon');
-      
-      if (extraGames.style.display === 'block') {
-        extraGames.style.display = 'none';
-        toggleText.textContent = 'Voir les 9 autres mondes';
-        toggleIcon.className = 'fa-solid fa-chevron-down';
-      } else {
-        extraGames.style.display = 'block';
-        toggleText.textContent = 'Moins de mondes';
-        toggleIcon.className = 'fa-solid fa-chevron-up';
-      }
-    }
-  </script>
+  if (titreTuteur) titreTuteur.textContent = "Mode " + nomMode;
+  if (messageTuteur) messageTuteur.innerHTML = "Chargement de la session pour <b>" + ELEVE_ID.toUpperCase() + "</b> en mode <b>" + nomMode + "</b>...";
+  if (zoneAlerte) zoneAlerte.style.display = 'block';
+  
+  // Exemple d'utilisation de l'Agent 3 (Maître du Jeu)
+  try {
+    let defiGenere = OrchestrateurAI.genererDefiJeu(nomMode, { conceptsCles: ["Notions générales", "Exercices"] });
+    console.log(defiGenere.defi);
+  } catch (err) {
+    console.log("Mode de jeu initialisé :", nomMode);
+  }
+};
 
-  <!-- Script métier Firebase & Orchestrateur IA -->
-  <script type="module" src="firebase.js"></script>
-</body>
-</html>
+// Gestion de l'import et pipeline IA dès que le DOM est prêt
+document.addEventListener("DOMContentLoaded", () => {
+  verifierMemoireNinjaPro();
+
+  const cameraInput = document.getElementById('camera-input');
+  if (cameraInput) {
+    cameraInput.addEventListener('change', async function(event) {
+      const fichier = event.target.files[0];
+      
+      if (fichier) {
+        const typeFichier = fichier.type;
+        const nomFichier = fichier.name;
+        
+        const previewZone = document.getElementById('preview-zone');
+        const imagePreview = document.getElementById('image-preview');
+        const texteAnalyse = document.getElementById('analysis-text');
+
+        if (previewZone) previewZone.style.display = 'block';
+        if (imagePreview) imagePreview.style.display = 'none';
+        
+        if (texteAnalyse) {
+          texteAnalyse.style.color = "#00f2fe";
+          texteAnalyse.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Stockage et analyse par les IA...';
+        }
+
+        if (typeFichier.startsWith('image/')) {
+          const lecteur = new FileReader();
+          lecteur.onload = async function(e) {
+            let base64Image = e.target.result;
+            if (imagePreview) {
+              imagePreview.src = base64Image;
+              imagePreview.style.display = 'block';
+            }
+
+            try {
+              // 1. Stockage Storage
+              const storageRef = ref(storage, 'utilisateurs/' + ELEVE_ID + '/fiches/' + Date.now() + '_' + nomFichier);
+              await uploadString(storageRef, base64Image, 'data_url');
+              let lienImage = await getDownloadURL(storageRef);
+
+              // 2. Appel du Chef d'orchestre des 4 IA
+              await OrchestrateurAI.analyserFiche(ELEVE_ID, lienImage, nomFichier);
+
+              if (texteAnalyse) {
+                texteAnalyse.style.color = "#4facfe";
+                texteAnalyse.innerHTML = '<i class="fa-solid fa-check-circle"></i> Fiche analysée et structurée par le Tuteur !';
+              }
+            } catch (erreur) {
+              console.error("Erreur de pipeline IA : ", erreur);
+              if (texteAnalyse) {
+                texteAnalyse.style.color = "#ff5858";
+                texteAnalyse.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erreur lors de l\'analyse.';
+              }
+            }
+          };
+          lecteur.readAsDataURL(fichier);
+        }
+      }
+    });
+  }
+});
