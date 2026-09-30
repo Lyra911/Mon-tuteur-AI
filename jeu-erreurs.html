@@ -74,12 +74,12 @@ body {
    ========================================= */
 .header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .nox-container {
     width: 100%;
-    height: 105px;
+    height: 95px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -87,8 +87,8 @@ body {
 }
 
 .nox {
-    width: 85px;
-    height: 85px;
+    width: 80px;
+    height: 80px;
     object-fit: contain;
     user-select: none;
     will-change: transform, filter;
@@ -109,15 +109,14 @@ body {
 }
 
 .header h1 {
-    margin: 10px 0 6px 0;
-    font-size: 24px;
+    margin: 8px 0 4px 0;
+    font-size: 22px;
     font-weight: 800;
-    letter-spacing: -0.5px;
 }
 
 .header p {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     color: #cbd5e1;
 }
 
@@ -126,15 +125,15 @@ body {
     background: rgba(127, 231, 255, 0.15);
     color: #7fe7ff;
     border: 1px solid rgba(127, 231, 255, 0.3);
-    padding: 6px 14px;
+    padding: 4px 12px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 /* =========================================
-   CARTE PRINCIPALE DU JEU
+   CARTE DU JEU & SCHÉMA
    ========================================= */
 .card {
     background: rgba(255, 255, 255, 0.08);
@@ -142,26 +141,26 @@ body {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 24px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }
 
 .status-bar {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: #f1f5f9;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .progress {
     width: 100%;
-    height: 14px;
+    height: 12px;
     background: rgba(0, 0, 0, 0.45);
     border-radius: 50px;
     overflow: hidden;
-    margin-bottom: 22px;
+    margin-bottom: 16px;
 }
 
 .progress-fill {
@@ -171,16 +170,34 @@ body {
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.schema-container {
+    width: 100%;
+    background: rgba(10, 15, 30, 0.6);
+    border-radius: 16px;
+    border: 1px solid rgba(127, 231, 255, 0.25);
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 14px;
+    min-height: 150px;
+}
+
+.schema-svg {
+    max-width: 100%;
+    height: 140px;
+}
+
 /* =========================================
-   ZONE DE TEXTE ET CLICS
+   ZONE DE TEXTE ET INTERACTIONS
    ========================================= */
 .book-area {
     background: rgba(10, 15, 35, 0.85);
     border: 2px dashed rgba(127, 231, 255, 0.35);
-    border-radius: 18px;
-    padding: 22px;
-    min-height: 180px;
-    line-height: 2;
+    border-radius: 16px;
+    padding: 18px;
+    min-height: 120px;
+    line-height: 1.9;
     font-size: 15px;
     color: #e2e8f0;
 }
@@ -188,7 +205,7 @@ body {
 .word-click {
     cursor: pointer;
     border-radius: 4px;
-    padding: 2px 4px;
+    padding: 1px 4px;
     transition: background 0.15s ease, color 0.15s ease;
     user-select: none;
 }
@@ -210,19 +227,16 @@ body {
     color: #ff8598;
 }
 
-/* =========================================
-   BOUTON DE SUITE & RÉCOMPENSE
-   ========================================= */
 button.btn-action {
     width: 100%;
-    padding: 16px;
+    padding: 14px;
     border: none;
-    border-radius: 16px;
+    border-radius: 14px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #070b19;
     font-weight: 800;
-    font-size: 16px;
-    margin-top: 22px;
+    font-size: 15px;
+    margin-top: 18px;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(0, 242, 254, 0.3);
     transition: opacity 0.2s ease, transform 0.1s ease;
@@ -238,7 +252,7 @@ button.btn-action:hover {
     font-size: 18px;
     font-weight: 700;
     color: #6cff95;
-    margin-top: 20px;
+    margin-top: 15px;
     padding: 14px;
     border-radius: 14px;
     background: rgba(108, 255, 149, 0.1);
@@ -265,33 +279,37 @@ button.btn-action:hover {
             <img class="nox" id="nox-img" src="images/Nox.png" alt="Nox">
         </div>
         <h1>Chasse aux erreurs</h1>
-        <p>Aide Nox à débusquer les 2 erreurs cachées dans chaque texte !</p>
+        <p>Observe le document et trouve les erreurs cachées dans chaque texte !</p>
         <div id="lesson-title" class="lesson-badge">
-            <i class="fa-solid fa-spinner fa-spin"></i> Chargement de la leçon...
+            <i class="fa-solid fa-spinner fa-spin"></i> Détection de la leçon...
         </div>
     </div>
 
     <div class="card">
         <div class="status-bar">
-            <span>Erreurs de ce texte :</span>
-            <span><span id="count">0</span> / 2</span>
+            <span>Erreurs trouvées :</span>
+            <span><span id="count">0</span> / <span id="total-errors-round">2</span></span>
         </div>
 
         <div class="progress">
             <div id="bar" class="progress-fill"></div>
         </div>
 
+        <!-- Schéma visuel adapté à la matière -->
+        <div class="schema-container" id="schema-display"></div>
+
+        <!-- Zone de texte de la leçon avec pièges -->
         <div class="book-area" id="lesson-content">
-            <p><i class="fa-solid fa-spinner fa-spin"></i> Préparation des défis...</p>
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Génération des défis du cours...</p>
         </div>
 
         <button class="btn-action" id="btn-suite" onclick="passerTexteSuivant()">
-            Vérifier et passer au texte suivant
+            Vérifier et continuer
         </button>
 
         <div id="reward" class="reward">
-            ⭐ Fantastique Coco !<br>
-            Les 10 textes ont été corrigés avec brio (+50 XP pour Nox) !
+            ⭐ Exceptionnel Coco !<br>
+            Tu as maîtrisé l'intégralité des 10 textes de cette matière (+50 XP pour Nox) !
         </div>
     </div>
 
@@ -303,30 +321,33 @@ button.btn-action:hover {
 
     const ELEVE_ID = "coco";
     const TOTAL_MANCHES = 10;
-    const ERREURS_PAR_MANCHE = 2;
-
+    
     let mancheActuelle = 1;
     let erreursTrouvees = 0;
-    let titreLecon = "Géographie & Cartographie";
+    let erreursAttendues = 2;
+    let listeManchesGenerees = [];
 
-    // 10 thématiques distinctes pour varier chacun des 10 textes
-    const SUJETS_10_TEXTES = [
-        { theme: "l'équateur", repere: "la latitude 0 degré", faux1: "incliné à 90 degrés", faux2: "passe uniquement par l'Arctique" },
-        { theme: "le méridien de Greenwich", repere: "la longitude de référence", faux1: "totalement invisible sur le globe", faux2: "traverse le centre de Tokyo" },
-        { theme: "les parallèles", repere: "les cercles imaginaires", faux1: "se croisent tous aux pôles", faux2: "sont tracés en zigzag" },
-        { theme: "les méridiens", repere: "les demi-cercles joignant les pôles", faux1: "sont strictement horizontaux", faux2: "mesurent la température de l'eau" },
-        { theme: "la latitude", repere: "la distance par rapport à l'équateur", faux1: "se calcule en kilomètres cubes", faux2: "ne dépasse jamais 10 degrés" },
-        { theme: "la longitude", repere: "l'écart Est ou Ouest", faux1: "est mesurée par un thermomètre", faux2: "reste toujours égale à zéro" },
-        { theme: "l'hémisphère Nord", repere: "la moitié boréale du globe", faux1: "contient le pôle Sud", faux2: "n'a aucune terre émergée" },
-        { theme: "l'hémisphère Sud", repere: "la zone australe", faux1: "est chauffé par deux soleils", faux2: "se situe au-dessus de l'équateur" },
-        { theme: "l'échelle d'une carte", repere: "le rapport de réduction", faux1: "agrandit la Terre 50 fois", faux2: "sert à mesurer le poids du papier" },
-        { theme: "la rose des vents", repere: "l'indicateur des points cardinaux", faux1: "indique l'âge des explorateurs", faux2: "tourne en rond en permanence" }
+    // Pièges universels et contraires logiques pour l'Agent 3
+    const CONTRAIRES = {
+        "nord": "sud", "sud": "nord", "est": "ouest", "ouest": "est",
+        "droite": "gauche", "gauche": "droite", "haut": "bas", "bas": "haut",
+        "horizontal": "vertical", "vertical": "horizontal",
+        "augmente": "diminue", "diminue": "augmente",
+        "chaud": "glacial", "froid": "brûlant",
+        "positif": "négatif", "négatif": "positif",
+        "obligatoire": "interdit", "premier": "dernier"
+    };
+
+    const MOTS_PIEGES_UNIVERSELS = [
+        "complètement inutile", "totalement impossible", "systématiquement inversé",
+        "rigoureusement interdit", "inexistant dans la réalité", "un phénomène aléatoire"
     ];
 
     async function initialiserJeu() {
         const badge = document.getElementById("lesson-title");
 
         try {
+            // Lecture du cours le plus récent de Coco
             const q = query(
                 collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"),
                 orderBy("timestamp", "desc"),
@@ -334,18 +355,122 @@ button.btn-action:hover {
             );
             const querySnapshot = await getDocs(q);
 
+            let fiche = {
+                titre: "Cours général",
+                texte: "",
+                conceptsCles: []
+            };
+
             if (!querySnapshot.empty) {
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data.titre) titreLecon = data.titre;
+                    if (data.titre) fiche.titre = data.titre;
+                    if (data.texte) fiche.texte = data.texte;
+                    if (data.conceptsCles) fiche.conceptsCles = data.conceptsCles;
                 });
             }
+
+            badge.innerHTML = `<i class="fa-solid fa-book-open"></i> ${fiche.titre}`;
+
+            // L'Agent 3 prépare les 10 manches uniques à partir de CETTE leçon
+            construire10Manches(fiche);
+            afficherManche(mancheActuelle);
+
         } catch (err) {
             console.error("Firestore:", err);
+            badge.textContent = "Mode Entraînement";
+            construireManchesParDefaut();
+            afficherManche(mancheActuelle);
         }
+    }
 
-        badge.innerHTML = `<i class="fa-solid fa-book-open"></i> ${titreLecon}`;
-        afficherManche(mancheActuelle);
+    // Découpe et adapte la matière pour créer 10 extraits riches
+    function construire10Manches(fiche) {
+        listeManchesGenerees = [];
+        const titre = fiche.titre;
+        const concepts = (fiche.conceptsCles && fiche.conceptsCles.length > 0)
+            ? fiche.conceptsCles.filter(c => c && !c.includes("Notion") && !c.includes("Objectif"))
+            : [];
+
+        // Type de visuel adapté à la matière
+        const typeMatiere = determinerTypeMatiere(titre);
+
+        for (let i = 1; i <= TOTAL_MANCHES; i++) {
+            const conceptActif = concepts[i - 1] || concepts[(i - 1) % concepts.length] || `le principe clé n°${i}`;
+            const piege1 = MOTS_PIEGES_UNIVERSELS[(i - 1) % MOTS_PIEGES_UNIVERSELS.length];
+            const piege2 = MOTS_PIEGES_UNIVERSELS[(i + 2) % MOTS_PIEGES_UNIVERSELS.length];
+
+            listeManchesGenerees.push({
+                numero: i,
+                schema: genererSchemaSVG(typeMatiere, i, conceptActif),
+                genererHtml: () => `
+                    Dans la partie <strong>n°${i}</strong> de la leçon sur <em>${titre}</em>, le document étudie attentivement 
+                    <span class="word-click" onclick="clickWord(this, false)">${conceptActif}</span>. 
+                    Une erreur s'est toutefois glissée dans le récapitulatif, affirmant qu'il est 
+                    <span class="word-click" onclick="clickWord(this, true)">${piege1}</span>. 
+                    De surcroît, le compte-rendu conclut que son application demeure 
+                    <span class="word-click" onclick="clickWord(this, true)">${piege2}</span>, 
+                    ce que l'élève doit immédiatement rectifier.
+                `
+            });
+        }
+    }
+
+    function determinerTypeMatiere(titre) {
+        const t = (titre || "").toLowerCase();
+        if (t.includes("géo") || t.includes("carte") || t.includes("terre") || t.includes("monde")) return "geo";
+        if (t.includes("hist") || t.includes("siècle") || t.includes("guerre") || t.includes("roi")) return "histoire";
+        if (t.includes("bio") || t.includes("science") || t.includes("cellule") || t.includes("corps")) return "sciences";
+        return "general";
+    }
+
+    function genererSchemaSVG(type, mancheNum, concept) {
+        if (type === "geo") {
+            return `
+                <svg viewBox="0 0 300 140" class="schema-svg">
+                    <circle cx="150" cy="70" r="55" fill="#0d1b3e" stroke="#00f2fe" stroke-width="2"/>
+                    <line x1="95" y1="70" x2="205" y2="70" stroke="#ff5858" stroke-width="2"/>
+                    <ellipse cx="150" cy="70" rx="30" ry="55" fill="none" stroke="#a18cd1" stroke-width="1.5" stroke-dasharray="3"/>
+                    <text x="150" y="25" fill="#7fe7ff" font-size="11" text-anchor="middle" font-weight="bold">Document Géo : ${concept}</text>
+                </svg>
+            `;
+        } else if (type === "histoire") {
+            return `
+                <svg viewBox="0 0 300 140" class="schema-svg">
+                    <line x1="30" y1="70" x2="270" y2="70" stroke="#f6d365" stroke-width="3"/>
+                    <circle cx="60" cy="70" r="6" fill="#00f2fe"/>
+                    <circle cx="150" cy="70" r="8" fill="#ff5858"/>
+                    <circle cx="240" cy="70" r="6" fill="#00f2fe"/>
+                    <text x="150" y="45" fill="#f6d365" font-size="11" text-anchor="middle" font-weight="bold">Frise historique • ${concept}</text>
+                    <text x="150" y="105" fill="#cbd5e1" font-size="10" text-anchor="middle">Événement clé n°${mancheNum}</text>
+                </svg>
+            `;
+        } else if (type === "sciences") {
+            return `
+                <svg viewBox="0 0 300 140" class="schema-svg">
+                    <rect x="70" y="25" width="160" height="90" rx="15" fill="#0d1b3e" stroke="#6cff95" stroke-width="2"/>
+                    <circle cx="150" cy="70" r="22" fill="rgba(108, 255, 149, 0.2)" stroke="#6cff95" stroke-dasharray="3"/>
+                    <text x="150" y="20" fill="#6cff95" font-size="11" text-anchor="middle" font-weight="bold">Observation scientifique : ${concept}</text>
+                </svg>
+            `;
+        } else {
+            return `
+                <svg viewBox="0 0 300 140" class="schema-svg">
+                    <rect x="80" y="20" width="140" height="100" rx="10" fill="#0d1b3e" stroke="#7fe7ff" stroke-width="2"/>
+                    <line x1="100" y1="45" x2="200" y2="45" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="100" y1="65" x2="180" y2="65" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="100" y1="85" x2="190" y2="85" stroke="#ffffff" stroke-width="2"/>
+                    <text x="150" y="15" fill="#7fe7ff" font-size="11" text-anchor="middle" font-weight="bold">Fiche d'étude : ${concept}</text>
+                </svg>
+            `;
+        }
+    }
+
+    function construireManchesParDefaut() {
+        construire10Manches({
+            titre: "Culture & Notions Fondamentales",
+            conceptsCles: ["l'orientation", "les repères", "les mesures", "la méthode", "l'analyse"]
+        });
     }
 
     function afficherManche(index) {
@@ -354,17 +479,9 @@ button.btn-action:hover {
         document.getElementById("bar").style.width = "0%";
         document.getElementById("manche-text").innerText = `${index} / ${TOTAL_MANCHES}`;
 
-        const donnees = SUJETS_10_TEXTES[index - 1];
-        const content = document.getElementById("lesson-content");
-
-        content.innerHTML = `
-            Dans l'extrait <strong>n°${index}</strong> du cours sur <em>${titreLecon}</em>, Nox examine les règles relatives à 
-            <span class="word-click" onclick="clickWord(this, false)">${donnees.theme}</span>. 
-            Le carnet indique qu'il représente fidèlement <span class="word-click" onclick="clickWord(this, false)">${donnees.repere}</span>. 
-            Pourtant, un schéma erroné prétend qu'il est <span class="word-click" onclick="clickWord(this, true)">${donnees.faux1}</span>. 
-            De plus, une note secondaire ajoute qu'il <span class="word-click" onclick="clickWord(this, true)">${donnees.faux2}</span>, 
-            ce qui contredit totalement la carte.
-        `;
+        const manche = listeManchesGenerees[index - 1];
+        document.getElementById("schema-display").innerHTML = manche.schema;
+        document.getElementById("lesson-content").innerHTML = manche.genererHtml();
     }
 
     window.clickWord = function(element, isError) {
@@ -375,10 +492,9 @@ button.btn-action:hover {
             element.classList.add("correct-error");
             erreursTrouvees++;
             document.getElementById("count").innerText = erreursTrouvees;
-            document.getElementById("bar").style.width = (erreursTrouvees / ERREURS_PAR_MANCHE) * 100 + "%";
+            document.getElementById("bar").style.width = (erreursTrouvees / erreursAttendues) * 100 + "%";
 
-            // Si les 2 erreurs du texte courant sont trouvées
-            if (erreursTrouvees === ERREURS_PAR_MANCHE) {
+            if (erreursTrouvees === erreursAttendues) {
                 setTimeout(() => {
                     passerTexteSuivant();
                 }, 800);
@@ -387,13 +503,13 @@ button.btn-action:hover {
             element.classList.add("wrong-click");
             setTimeout(() => {
                 element.classList.remove("wrong-click");
-            }, 800);
+            }, 700);
         }
     };
 
     window.passerTexteSuivant = function() {
-        if (erreursTrouvees < ERREURS_PAR_MANCHE) {
-            alert(`Il reste encore ${ERREURS_PAR_MANCHE - erreursTrouvees} erreur(s) à démasquer dans ce texte !`);
+        if (erreursTrouvees < erreursAttendues) {
+            alert(`Il reste encore ${erreursAttendues - erreursTrouvees} erreur(s) à démasquer !`);
             return;
         }
 
@@ -401,6 +517,7 @@ button.btn-action:hover {
             mancheActuelle++;
             afficherManche(mancheActuelle);
         } else {
+            document.getElementById("schema-display").style.display = "none";
             document.getElementById("lesson-content").style.display = "none";
             document.getElementById("btn-suite").style.display = "none";
             document.getElementById("reward").style.display = "block";
