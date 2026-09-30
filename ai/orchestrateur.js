@@ -1,31 +1,34 @@
-// --- CHEF D'ORCHESTRE DES AGENTS IA (AVEC RELAIS SECURISE SCRIPT GOOGLE) ---
+// --- CHEF D'ORCHESTRE DES AGENTS IA (AVEC SUPPORT MULTIPAGE & RELAIS SECURISE) ---
 
 import { db } from "../firebase.js"; 
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// L'URL de ton nouveau déploiement Apps Script
+// L'URL de ton relais Apps Script
 const RELAIS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbvHkVRVNowyy_98Dpv44WinuqK0FmQ88HO4Q-DvcWg45P4UhH9vzzw10jmraVEDzx/exec";
 
 export const OrchestrateurAI = {
 
   // =========================================================================
-  // AGENT 1 : Vision & Analyse du document
+  // AGENT 1 : Vision & Analyse du document (Support 1 photo OU plusieurs pages PDF)
   // =========================================================================
-  async analyserFiche(eleveId, fichierUrl, nomFichier, base64Data) {
+  async analyserFiche(eleveId, fichierUrl, nomFichier, imagesData) {
     console.log("👁️ Agent 1 (Vision) : Analyse approfondie du document...", nomFichier);
 
     let sujetPropre = nomFichier ? nomFichier.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : "Leçon";
     let donneesExtraites = null;
 
+    // Harmonise sous forme de tableau (qu'on reçoive 1 image Base64 ou une liste de pages)
+    const listePages = Array.isArray(imagesData) ? imagesData : [imagesData];
+
     const promptInstruction = `
-Tu es le tuteur pédagogique de l'élève.
-Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, notions).
+Tu es le tuteur pédagogique personnel de l'élève.
+Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, schémas, tableaux) sur l'ensemble des pages transmises.
 
 Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette structure exacte :
 {
   "titre": "Titre exact de la leçon",
   "matiere": "Matière scolaire (ex: Univers social, Sciences, Français, Mathématiques)",
-  "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé pour que l'élève puisse tout réviser sans le document d'origine.",
+  "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé de manière à ce que l'élève puisse tout réviser et comprendre sans avoir besoin du document d'origine.",
   "sections_fiche": [
     {
       "titre": "Titre du bloc de révision",
@@ -35,33 +38,34 @@ Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette str
   ],
   "notions": [
     {
-      "concept": "Nom du concept clé",
+      "concept": "Nom du concept ou terme clé",
       "definition": "Explication claire et vraie du concept selon le cours.",
       "faux1": "Une affirmation fausse mais plausible sur ce concept",
       "faux2": "Une deuxième affirmation erronée sur ce concept"
     }
   ]
 }
-Génère l'ensemble des notions clés nécessaires à la compréhension globale du document.
+Génère l'ensemble des notions clés nécessaires pour maîtriser le chapitre complet.
 `;
 
     try {
-      if (base64Data) {
-        const cleanBase64 = base64Data.split(",")[1] || base64Data;
-        const mimeType = base64Data.split(";")[0].split(":")[1] || "image/jpeg";
+      if (listePages.length > 0 && listePages[0]) {
+        // Préparation des "parts" : le prompt texte suivi de chaque page en inline_data
+        const parts = [{ text: promptInstruction }];
+
+        listePages.forEach((pageBase64) => {
+          const cleanBase64 = pageBase64.split(",")[1] || pageBase64;
+          const mimeType = pageBase64.split(";")[0].split(":")[1] || "image/jpeg";
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: cleanBase64
+            }
+          });
+        });
 
         const payloadGemini = {
-          contents: [{
-            parts: [
-              { text: promptInstruction },
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: cleanBase64
-                }
-              }
-            ]
-          }],
+          contents: [{ parts: parts }],
           generationConfig: {
             temperature: 0.2,
             response_mime_type: "application/json"
@@ -87,11 +91,12 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
       console.warn("Échec de la communication avec le relais. Utilisation du repli local.", err);
     }
 
+    // Structure de secours si hors-ligne ou erreur
     if (!donneesExtraites) {
       donneesExtraites = {
         titre: sujetPropre,
         matiere: "Général",
-        resume_complet: `Synthèse de la leçon portant sur ${sujetPropre}. Ce chapitre présente l'ensemble des notions indispensables pour comprendre le cours.`,
+        resume_complet: `Synthèse de la leçon portant sur ${sujetPropre}. Ce chapitre présente l'ensemble des notions indispensables.`,
         sections_fiche: [
           {
             titre: "Points essentiels",
@@ -110,6 +115,7 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
       };
     }
 
+    // Sauvegarde dans Firestore pour l'élève actif
     await this.transmettreAuTuteur(eleveId, donneesExtraites, nomFichier);
     return donneesExtraites;
   },
@@ -162,7 +168,7 @@ Génère l'ensemble des notions clés nécessaires à la compréhension globale 
   },
 
   // =========================================================================
-  // AGENT 4 : Journal d'erreurs
+  // AGENT 4 : Journal d'erreurs (Suivi pédagogique)
   // =========================================================================
   async surveillerErreurs(eleveId, erreurDetectee) {
     console.log("🥷 Agent 4 : Enregistrement de l'erreur...");
