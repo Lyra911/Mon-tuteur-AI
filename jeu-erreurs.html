@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon-tuteur-AI - Arène de Jeu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top, #1e1b4b 0%, #070b19 100%);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .nox {
+            animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
+        }
+        @keyframes briller {
+            0% { filter: drop-shadow(0 0 10px #7FE7FF); }
+            50% { filter: drop-shadow(0 0 30px #E2A7FF); }
+            100% { filter: drop-shadow(0 0 10px #7FE7FF); }
+        }
+        @keyframes flotter {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-6">
+
+    <!-- En-tête -->
+    <header class="w-full max-w-lg flex items-center justify-between mb-6">
+        <a href="index.html" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-cyan-300 font-semibold text-sm">
+            <i class="fa-solid fa-arrow-left"></i> Retour
+        </a>
+        <div class="flex items-center gap-2 bg-purple-900/40 px-4 py-2 rounded-xl border border-purple-500/30">
+            <i class="fa-solid fa-star text-yellow-400"></i>
+            <span class="font-bold text-yellow-200 text-sm">Niveau 1 • 50 XP</span>
+        </div>
+    </header>
+
+    <!-- Zone principale -->
+    <main class="w-full max-w-lg flex flex-col items-center text-center my-auto">
+        <!-- Nox animé qui flotte et brille -->
+        <div class="relative mb-6">
+            <div class="w-24 h-24 rounded-full bg-indigo-950/80 border-2 border-cyan-400 flex items-center justify-center text-5xl shadow-2xl nox">
+                ✨👻
+            </div>
+        </div>
+
+        <!-- Titre du jeu -->
+        <h1 id="game-title" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-300 mb-2">
+            Chargement du monde...
+        </h1>
+        <p id="course-subject" class="text-slate-400 text-xs mb-6">Analyse des fiches de cours en cours...</p>
+
+        <!-- Carte Défi -->
+        <div class="glass-card w-full p-6 text-left border-l-4 border-l-cyan-400 mb-6">
+            <div class="flex items-center gap-2 mb-2 text-cyan-400 font-bold text-sm">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Défi du Maître du Jeu :
+            </div>
+            <p id="game-challenge" class="text-base text-slate-200 leading-relaxed">
+                <i class="fa-solid fa-spinner fa-spin text-cyan-400"></i> Préparation de ton arène...
+            </p>
+        </div>
+
+        <!-- Bouton d'action -->
+        <div class="w-full">
+            <button onclick="validerDefi()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 hover:opacity-90 font-bold text-slate-900 shadow-lg transition transform active:scale-95 flex items-center justify-between">
+                <span><i class="fa-solid fa-check-circle text-slate-900 mr-2"></i> Valider et aider Nox</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- Pied de page -->
+    <footer class="w-full max-w-lg text-center text-xs text-slate-500 mt-6">
+        Mon-tuteur-AI • Aventure Kawaii
+    </footer>
+
+    <!-- Script de récupération Firestore et Orchestrateur -->
+    <script type="module">
+        import { db } from "./firebase.js";
+        import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+        import { OrchestrateurAI } from "./ai/orchestrateur.js";
+
+        const ELEVE_ID = "coco";
+        const params = new URLSearchParams(window.location.search);
+        const nomMode = params.get('mode') || "Aventure générale";
+
+        document.getElementById('game-title').textContent = nomMode;
+
+        async function chargerDefi() {
+            try {
+                const q = query(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"), orderBy("timestamp", "desc"), limit(1));
+                const querySnapshot = await getDocs(q);
+
+                let notionsFic = { conceptsCles: ["Notions générales"] };
+                let titreCours = "Cours général";
+
+                if (!querySnapshot.empty) {
+                    querySnapshot.forEach((doc) => {
+                        let data = doc.data();
+                        if (data.conceptsCles) notionsFic.conceptsCles = data.conceptsCles;
+                        if (data.titre) titreCours = data.titre;
+                    });
+                }
+
+                document.getElementById('course-subject').textContent = `Matière active : ${titreCours}`;
+
+                // Appel de l'Agent 3
+                let defi = OrchestrateurAI.genererDefiJeu(nomMode, notionsFic);
+                document.getElementById('game-challenge').textContent = defi.defi;
+
+            } catch (err) {
+                console.error("Erreur :", err);
+                document.getElementById('game-challenge').textContent = "Prêt à relever le défi ! Observe bien et réponds aux questions.";
+            }
+        }
+
+        window.validerDefi = function() {
+            alert("✨ Bravo ! Défi réussi avec succès (+50 XP) !");
+            window.location.href = "index.html";
+        };
+
+        chargerDefi();
+    </script>
+</body>
+</html>
