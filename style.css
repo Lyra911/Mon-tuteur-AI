@@ -25,7 +25,9 @@ body {
   overflow: hidden;
 }
 
-/* Conteneur Smartphone Pro */
+/* =========================================
+   CONTENEUR SMARTPHONE PRO
+   ========================================= */
 .phone-container {
   width: 390px;
   height: 844px;
@@ -54,7 +56,9 @@ body {
   z-index: 10;
 }
 
-/* En-tête Nox Kawaii */
+/* =========================================
+   EN-TÊTE NOX
+   ========================================= */
 .nox-header {
   padding: 35px 20px 15px 20px;
   display: flex;
@@ -76,85 +80,15 @@ body {
   margin-top: 2px;
 }
 
-/* Zone de contenu défilante */
-.app-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 20px 90px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.app-content::-webkit-scrollbar {
-  display: none;
-}
-
-/* Cartes Glassmorphism Kawaii */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-}
-
-/* Boutons et éléments interactifs */
-.btn-neon {
-  background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
-  color: #070b19;
-  font-weight: 700;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 20px;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
-  transition: opacity 0.2s;
-}
-
-.btn-neon:hover {
-  opacity: 0.9;
-}
-
-/* Barre de navigation inférieure */
-.nav-bar {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 75px;
-  background: rgba(7, 11, 25, 0.95);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid var(--glass-border);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding-bottom: 10px;
-  z-index: 20;
-}
-
-.nav-item {
-  color: var(--text-muted);
-  font-size: 11px;
-  text-align: center;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.nav-item.active {
-  color: var(--neon-cyan);
-}
-
-.nav-item i {
-  font-size: 18px;
-}
-
-/* --- ANIMATION MAGIQUE DE NOX --- */
+/* =========================================
+   ANIMATION MAGIQUE DE NOX (FLOTTE & BRILLE)
+   ========================================= */
 .nox {
-  animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
+  display: inline-block;
+  user-select: none;
+  animation:
+    flotter 4s ease-in-out infinite,
+    briller 2s ease-in-out infinite;
 }
 
 @keyframes briller {
@@ -174,6 +108,185 @@ body {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
+}
+
+/* =========================================
+   ZONE DE CONTENU DÉFILANTE
+   ========================================= */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 90px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cartes Glassmorphism */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Zone Scanner / Importation */
+.scanner-box {
+  border: 2px dashed rgba(0, 242, 254, 0.4);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  background: rgba(0, 242, 254, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scanner-box:hover {
+  border-color: var(--neon-cyan);
+  background: rgba(0, 242, 254, 0.1);
+}
+
+/* =========================================
+   GRILLE DES MONDES & CARTES DE JEUX
+   ========================================= */
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.game-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--text-main);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--neon-cyan);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.game-card i {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.game-card h4 {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.game-card p {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Boutons déroulants */
+#extra-games {
+  display: none;
+  margin-top: 12px;
+}
+
+.btn-toggle-games {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  padding: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-games:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Boutons d'action Néon */
+.btn-neon {
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+  color: #070b19;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
+  transition: opacity 0.2s;
+}
+
+.btn-neon:hover {
+  opacity: 0.9;
+}
+
+/* =========================================
+   BARRE DE NAVIGATION INFÉRIEURE
+   ========================================= */
+.nav-bar {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 70px;
+  background: rgba(7, 11, 25, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: 8px;
+  z-index: 20;
+}
+
+.nav-item {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item.active {
+  color: var(--neon-cyan);
+}
+
+.nav-item i {
+  font-size: 18px;
 }
