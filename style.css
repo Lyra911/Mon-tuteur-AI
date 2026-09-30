@@ -151,3 +151,29 @@ body {
 .nav-item i {
   font-size: 18px;
 }
+
+/* --- ANIMATION MAGIQUE DE NOX --- */
+.nox {
+  animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
+}
+
+@keyframes briller {
+  0% {
+    filter: drop-shadow(0 0 10px #7FE7FF);
+  }
+  50% {
+    filter: drop-shadow(0 0 30px #E2A7FF);
+  }
+  100% {
+    filter: drop-shadow(0 0 10px #7FE7FF);
+  }
+}
+
+@keyframes flotter {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
