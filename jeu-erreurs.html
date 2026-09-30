@@ -7,71 +7,129 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* =========================================
+   STYLE GLOBAL & STABILISATION DU DÉFILEMENT
+   ========================================= */
 body {
     margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(180deg, #13174a, #262d84, #3f4dbf);
-    color: white;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background: linear-gradient(180deg, #13174a 0%, #262d84 50%, #3f4dbf 100%);
+    color: #ffffff;
     min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: scroll; /* Empêche le saut en figeant la largeur de la page */
 }
 
 .container {
     max-width: 700px;
-    margin: auto;
+    margin: 0 auto;
     padding: 20px;
+    box-sizing: border-box;
 }
 
+/* =========================================
+   BARRE DE NAVIGATION SUPÉRIEURE
+   ========================================= */
 .top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .btn-retour {
     background: rgba(255, 255, 255, 0.15);
     color: #7fe7ff;
     text-decoration: none;
-    padding: 8px 14px;
+    padding: 8px 16px;
     border-radius: 12px;
     font-weight: 600;
     font-size: 14px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: 0.2s;
+    gap: 8px;
+    transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .btn-retour:hover {
     background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
 }
 
+.badge-xp {
+    font-size: 13px;
+    color: #ffd166;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 209, 102, 0.15);
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 209, 102, 0.3);
+}
+
+/* =========================================
+   EN-TÊTE & NOX ANIMÉ SÉCURISÉ
+   ========================================= */
 .header {
     text-align: center;
+    margin-bottom: 20px;
 }
 
-/* Nox magique : flottaison et lueur */
+/* Conteneur à taille fixe pour éviter de pousser le reste de la page */
+.nox-container {
+    width: 100%;
+    height: 105px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
 .nox {
     width: 85px;
     height: 85px;
     object-fit: contain;
-    animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
+    user-select: none;
+    will-change: transform, filter;
+    animation: 
+        flotter 4s ease-in-out infinite, 
+        briller 2s ease-in-out infinite;
 }
 
 @keyframes briller {
-    0% { filter: drop-shadow(0 0 8px #7FE7FF); }
-    50% { filter: drop-shadow(0 0 25px #E2A7FF); }
-    100% { filter: drop-shadow(0 0 8px #7FE7FF); }
+    0% {
+        filter: drop-shadow(0 0 8px #7FE7FF);
+    }
+    50% {
+        filter: drop-shadow(0 0 25px #E2A7FF);
+    }
+    100% {
+        filter: drop-shadow(0 0 8px #7FE7FF);
+    }
 }
 
 @keyframes flotter {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 .header h1 {
-    margin: 10px 0 4px 0;
+    margin: 10px 0 6px 0;
     font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.header p {
+    margin: 0;
+    font-size: 14px;
+    color: #cbd5e1;
 }
 
 .lesson-badge {
@@ -79,109 +137,127 @@ body {
     background: rgba(127, 231, 255, 0.15);
     color: #7fe7ff;
     border: 1px solid rgba(127, 231, 255, 0.3);
-    padding: 4px 12px;
+    padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
-    margin-top: 6px;
+    font-weight: 600;
+    margin-top: 10px;
 }
 
+/* =========================================
+   CARTE PRINCIPALE DU JEU
+   ========================================= */
 .card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 25px;
-    padding: 20px;
-    margin-top: 15px;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }
 
 .status-bar {
     display: flex;
     justify-content: space-between;
     font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 10px;
 }
 
 .progress {
     width: 100%;
-    height: 16px;
-    background: rgba(0, 0, 0, 0.4);
+    height: 14px;
+    background: rgba(0, 0, 0, 0.45);
     border-radius: 50px;
     overflow: hidden;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .progress-fill {
     width: 0%;
     height: 100%;
     background: linear-gradient(90deg, #7fe7ff, #c896ff);
-    transition: width 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Zone du texte de la leçon */
+/* =========================================
+   ZONE DE COURS & MOTS INTERACTIFS
+   ========================================= */
 .book-area {
     background: rgba(10, 15, 35, 0.85);
     border: 2px dashed rgba(127, 231, 255, 0.35);
-    border-radius: 20px;
-    padding: 24px 20px;
-    min-height: 200px;
-    line-height: 1.9;
+    border-radius: 18px;
+    padding: 22px;
+    min-height: 180px;
+    line-height: 2;
     font-size: 15px;
     color: #e2e8f0;
 }
 
-/* Mots d'apparence identique avant tout clic */
 .word-click {
     cursor: pointer;
     border-radius: 4px;
-    padding: 1px 4px;
-    transition: background 0.15s ease;
+    padding: 2px 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+    user-select: none;
 }
 
 .word-click:hover {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* Révélé uniquement si c'est une vraie erreur */
 .word-click.correct-error {
-    background: rgba(108, 255, 149, 0.3);
+    background: rgba(108, 255, 149, 0.25);
     color: #6cff95;
     text-decoration: line-through;
     border-bottom: 2px solid #6cff95;
     cursor: default;
 }
 
-/* Surlignage bref en cas de mauvais clic */
 .word-click.wrong-click {
     background: rgba(255, 95, 122, 0.3);
     color: #ff8598;
 }
 
-button {
+/* =========================================
+   BOUTONS & ÉCRAN DE RÉCOMPENSE
+   ========================================= */
+button.btn-valider {
     width: 100%;
     padding: 16px;
     border: none;
-    border-radius: 15px;
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    border-radius: 16px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #070b19;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 16px;
-    margin-top: 20px;
+    margin-top: 22px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
-    transition: 0.2s ease;
+    box-shadow: 0 6px 20px rgba(0, 242, 254, 0.3);
+    transition: opacity 0.2s ease, transform 0.1s ease;
 }
 
-button:hover {
+button.btn-valider:hover {
     opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+button.btn-valider:active {
+    transform: translateY(1px);
 }
 
 .reward {
     text-align: center;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: #6cff95;
     margin-top: 20px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(108, 255, 149, 0.1);
+    border: 1px solid rgba(108, 255, 149, 0.25);
     display: none;
 }
 </style>
@@ -194,13 +270,15 @@ button:hover {
         <a href="index.html" class="btn-retour">
             <i class="fa-solid fa-arrow-left"></i> Retour au QG
         </a>
-        <div style="font-size: 13px; color: #ffd166; font-weight: 700;">
+        <div class="badge-xp">
             <i class="fa-solid fa-star"></i> +50 XP
         </div>
     </div>
 
     <div class="header">
-        <img class="nox" id="nox-img" src="images/Nox.png" alt="Nox">
+        <div class="nox-container">
+            <img class="nox" id="nox-img" src="Images/Nox.png" alt="Nox">
+        </div>
         <h1>Chasse aux erreurs</h1>
         <p>Aide Nox à débusquer les 3 erreurs cachées dans la leçon !</p>
         <div id="lesson-title" class="lesson-badge">
@@ -222,7 +300,7 @@ button:hover {
             <p><i class="fa-solid fa-spinner fa-spin"></i> Analyse de ton document...</p>
         </div>
 
-        <button onclick="finishGame()">
+        <button class="btn-valider" onclick="finishGame()">
             Vérifier et restaurer la page
         </button>
 
