@@ -3,8 +3,8 @@
 import { db } from "../firebase.js"; 
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// Renseigne ta clé API Gemini (Google AI Studio)
-const GEMINI_API_KEY = "TA_CLE_API_GEMINI";
+// Lecture sécurisée de la clé API depuis le navigateur (zéro blocage GitHub)
+const GEMINI_API_KEY = localStorage.getItem("GEMINI_API_KEY") || "";
 
 export const OrchestrateurAI = {
 
@@ -14,45 +14,55 @@ export const OrchestrateurAI = {
   async analyserFiche(eleveId, fichierUrl, nomFichier, base64Data) {
     console.log("👁️ Agent 1 (Vision) : Analyse approfondie du document...", nomFichier);
     
+    // Demande de clé si absente du navigateur
+    let cleActive = GEMINI_API_KEY;
+    if (!cleActive) {
+      const saisie = prompt("Entre ta clé API Gemini pour analyser le cours de Coco :");
+      if (saisie) {
+        cleActive = saisie.trim();
+        localStorage.setItem("GEMINI_API_KEY", cleActive);
+      }
+    }
+
     let sujetPropre = nomFichier ? nomFichier.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") : "Leçon";
     let donneesExtraites = null;
 
-    // 1. Définition du prompt système pour forcer une sortie JSON structurée
+    // 1. Définition du prompt système structuré
     const promptInstruction = `
-      Tu es le tuteur pédagogique personnel de l'élève Coco.
-      Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, notions).
-      
-      Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette structure exacte :
-      {
-        "titre": "Titre exact et complet de la leçon",
-        "matiere": "Matière scolaire (ex: Univers social, Sciences, Français, Mathématiques)",
-        "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé de manière à ce que l'élève puisse tout réviser et comprendre sans avoir besoin du document d'origine.",
-        "sections_fiche": [
-          {
-            "titre": "Titre du bloc de révision",
-            "icone": "fa-book-open",
-            "points": ["Point clé 1", "Point clé 2", "Point clé 3"]
-          }
-        ],
-        "notions": [
-          {
-            "concept": "Nom du concept ou terme clé",
-            "definition": "Explication claire et vraie du concept selon le cours.",
-            "faux1": "Une affirmation fausse mais plausible sur ce concept",
-            "faux2": "Une deuxième affirmation erronée sur ce concept"
-          }
-        ]
-      }
-      Génère entre 8 et 12 notions détaillées dans le tableau "notions".
+Tu es le tuteur pédagogique personnel de l'élève Coco.
+Analyse attentivement l'intégralité du document scolaire fourni (texte, leçons, notions).
+
+Retourne STRICTEMENT un objet JSON valide, sans balises markdown, avec cette structure exacte :
+{
+  "titre": "Titre exact et complet de la leçon",
+  "matiere": "Matière scolaire (ex: Univers social, Sciences, Français, Mathématiques)",
+  "resume_complet": "Une synthèse rédigée exhaustive, fluide et complète du cours. Développe chaque notion clé de manière à ce que l'élève puisse tout réviser et comprendre sans avoir besoin du document d'origine.",
+  "sections_fiche": [
+    {
+      "titre": "Titre du bloc de révision",
+      "icone": "fa-book-open",
+      "points": ["Point clé 1", "Point clé 2", "Point clé 3"]
+    }
+  ],
+  "notions": [
+    {
+      "concept": "Nom du concept ou terme clé",
+      "definition": "Explication claire et vraie du concept selon le cours.",
+      "faux1": "Une affirmation fausse mais plausible sur ce concept",
+      "faux2": "Une deuxième affirmation erronée sur ce concept"
+    }
+  ]
+}
+Génère entre 8 et 12 notions détaillées dans le tableau "notions".
     `;
 
-    // 2. Appel à l'API Gemini si le fichier est présent
+    // 2. Appel direct à l'API Gemini 1.5 Flash
     try {
-      if (base64Data && GEMINI_API_KEY !== "TA_CLE_API_GEMINI") {
+      if (base64Data && cleActive) {
         const base64Clean = base64Data.split(",")[1] || base64Data;
         const mimeType = base64Data.split(";")[0].split(":")[1] || "image/jpeg";
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleActive}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -79,10 +89,10 @@ export const OrchestrateurAI = {
         donneesExtraites = JSON.parse(texteReponse);
       }
     } catch (err) {
-      console.warn("Échec de l'appel Gemini direct ou clé absente. Utilisation du repli structuré.", err);
+      console.warn("Échec de l'appel Gemini direct ou clé invalide. Utilisation du repli structuré.", err);
     }
 
-    // Structure de secours si l'API n'est pas encore connectée
+    // Structure de repli propre si aucun fichier ou pas de connexion API
     if (!donneesExtraites) {
       donneesExtraites = {
         titre: sujetPropre,
@@ -117,7 +127,6 @@ export const OrchestrateurAI = {
   async transmettreAuTuteur(eleveId, donneesFiche, nomFichier) {
     console.log("🧠 Agent 2 (Tuteur) : Écriture dans Firestore pour", eleveId);
     try {
-      // Stockage de texte pur uniquement : aucun octet d'image lourde pour préserver le 1 Go
       const docRef = await addDoc(collection(db, "utilisateurs", eleveId, "fiches_cours"), {
         titre: donneesFiche.titre,
         matiere: donneesFiche.matiere,
