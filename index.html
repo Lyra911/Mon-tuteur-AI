@@ -19,7 +19,7 @@
     .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
     .game-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; cursor: pointer; transition: all 0.3s ease; }
     .game-card:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--neon-cyan); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2); }
-    .game-card i { font-size: 22px; color: var(--neon-cyan); margin-bottom: 8px; }
+    .game-card i { font-size: 22px; margin-bottom: 8px; }
     .game-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #fff; }
     .game-card p { font-size: 11px; color: var(--text-muted); }
 
@@ -110,26 +110,26 @@
         
         <!-- Les 6 premiers jeux visibles -->
         <div class="games-grid">
-          <div class="game-card" onclick="lancerJeu('Compagnon IA')"><i class="fa-solid fa-ghost"></i><h4>1. Compagnon</h4><p>Nourris Nox.</p></div>
-          <div class="game-card" onclick="lancerJeu('Donjon Magique')"><i class="fa-solid fa-dungeon"></i><h4>2. Donjons</h4><p>Explore les ruines.</p></div>
-          <div class="game-card" onclick="lancerJeu('Chasse aux erreurs')"><i class="fa-solid fa-bullseye"></i><h4>3. Chasse pièges</h4><p>Trouve les erreurs.</p></div>
-          <div class="game-card" onclick="lancerJeu('Combat de monstres')"><i class="fa-solid fa-wand-sparkles"></i><h4>4. Combat</h4><p>Lance des sorts.</p></div>
-          <div class="game-card" onclick="lancerJeu('Détective')"><i class="fa-solid fa-magnifying-glass"></i><h4>5. Détective</h4><p>Mène l'enquête.</p></div>
-          <div class="game-card" onclick="lancerJeu('Bâtisseur')"><i class="fa-solid fa-hammer"></i><h4>6. Bâtisseur</h4><p>Construis ta ville.</p></div>
+          <div class="game-card" onclick="lancerJeu('Compagnon IA')"><i class="fa-solid fa-dragon" style="color: #fda085;"></i><h4>Compagnon IA</h4><p>Nourris ta créature.</p></div>
+          <div class="game-card" onclick="lancerJeu('Donjon Magique')"><i class="fa-solid fa-dungeon" style="color: #a18cd1;"></i><h4>2. Donjons</h4><p>Donjon unique.</p></div>
+          <div class="game-card" onclick="lancerJeu('Chasse aux erreurs')"><i class="fa-solid fa-bullseye" style="color: #ff5858;"></i><h4>3. Chasse pièges</h4><p>Trouve les erreurs.</p></div>
+          <div class="game-card" onclick="lancerJeu('Combat de monstres')"><i class="fa-solid fa-wand-sparkles" style="color: #4facfe;"></i><h4>4. Combat</h4><p>Sortilège magique.</p></div>
+          <div class="game-card" onclick="lancerJeu('Détective scientifique')"><i class="fa-solid fa-magnifying-glass" style="color: #f6d365;"></i><h4>5. Détective</h4><p>Résous l'enquête.</p></div>
+          <div class="game-card" onclick="lancerJeu('Construis ton monde')"><i class="fa-solid fa-helmet-safety" style="color: #00f2fe;"></i><h4>6. Bâtisseur</h4><p>Gagne des ressources.</p></div>
         </div>
 
         <!-- Les 9 jeux suivants (masqués par défaut) -->
         <div id="extra-games">
           <div class="games-grid">
-            <div class="game-card" onclick="lancerJeu('Laboratoire')"><i class="fa-solid fa-flask"></i><h4>7. Labo</h4><p>Expériences.</p></div>
-            <div class="game-card" onclick="lancerJeu('Arène de Quiz')"><i class="fa-solid fa-brain"></i><h4>8. Quiz Arena</h4><p>Défis rapides.</p></div>
-            <div class="game-card" onclick="lancerJeu('Voyage Spatial')"><i class="fa-solid fa-rocket"></i><h4>9. Espace</h4><p>Explore les astres.</p></div>
-            <div class="game-card" onclick="lancerJeu('Jardin Secret')"><i class="fa-solid fa-seedling"></i><h4>10. Jardin</h4><p>Fais pousser.</p></div>
-            <div class="game-card" onclick="lancerJeu('Bibliothèque')"><i class="fa-solid fa-book-bookmark"></i><h4>11. Ancien</h4><p>Manuscrits.</p></div>
-            <div class="game-card" onclick="lancerJeu('Musique & Rythme')"><i class="fa-solid fa-music"></i><h4>12. Rythme</h4><p>Notes musicales.</p></div>
-            <div class="game-card" onclick="lancerJeu('Portail Mystique')"><i class="fa-solid fa-ring"></i><h4>13. Portail</h4><p>Énigmes.</p></div>
-            <div class="game-card" onclick="lancerJeu('Ordonnance')"><i class="fa-solid fa-puzzle-piece"></i><h4>14. Logique</h4><p>Puzzles.</p></div>
-            <div class="game-card" onclick="lancerJeu('Temple du Temps')"><i class="fa-solid fa-hourglass-start"></i><h4>15. Chrono</h4><p>Contre la montre.</p></div>
+            <div class="game-card" onclick="lancerJeu('Puzzle intelligent')"><i class="fa-solid fa-puzzle-piece" style="color: #fbc2eb;"></i><h4>7. Puzzle</h4><p>Reconstitue l'image.</p></div>
+            <div class="game-card" onclick="lancerJeu('Cartes à collectionner')"><i class="fa-solid fa-clone" style="color: #fda085;"></i><h4>8. Cartes clés</h4><p>Bâtis ton set.</p></div>
+            <div class="game-card" onclick="lancerJeu('Voyage mondial')"><i class="fa-solid fa-earth-americas" style="color: #4facfe;"></i><h4>9. Voyage</h4><p>Nouvelles destinations.</p></div>
+            <div class="game-card" onclick="lancerJeu('Simulation pro')"><i class="fa-solid fa-user-tie" style="color: #a18cd1;"></i><h4>10. Simulation</h4><p>Incarne un rôle.</p></div>
+            <div class="game-card" onclick="lancerJeu('Course éducative')"><i class="fa-solid fa-flag-checkered" style="color: #f6d365;"></i><h4>11. Course</h4><p>Avance ton vaisseau.</p></div>
+            <div class="game-card" onclick="lancerJeu('Mémoire évolutive')"><i class="fa-solid fa-brain" style="color: #ff5858;"></i><h4>12. Mémoire</h4><p>Retiens tout.</p></div>
+            <div class="game-card" onclick="lancerJeu('Tower Defense')"><i class="fa-solid fa-chess-rook" style="color: #00f2fe;"></i><h4>13. Tower Defense</h4><p>Place des tours.</p></div>
+            <div class="game-card" onclick="lancerJeu('Style Pokémon')"><i class="fa-solid fa-paw" style="color: #fbc2eb;"></i><h4>14. Pokémon</h4><p>Fais évoluer.</p></div>
+            <div class="game-card" onclick="lancerJeu('Livre interactif')"><i class="fa-solid fa-book-open-reader" style="color: #fda085;"></i><h4>15. Héros</h4><p>Vis l'histoire.</p></div>
           </div>
         </div>
 
