@@ -2,8 +2,8 @@
   --bg-space: #070b19;
   --neon-cyan: #00f2fe;
   --neon-blue: #4facfe;
-  --glass-bg: rgba(15, 23, 42, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.15);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
 }
@@ -36,15 +36,111 @@ body {
   -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--glass-border);
   border-radius: 40px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 242, 254, 0.15);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 242, 254, 0.2);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
 }
 
-/* Encoche iPhone */
-.notch {
-  position: absolute;
-  top: 0;
-  left: 50%
+/* En-tête du Compagnon Nox */
+.nox-header {
+  padding: 20px 24px 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nox-title h1 {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 30%, var(--neon-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nox-title p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Zone de contenu défilante */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-content::-webkit-scrollbar {
+  width: 4px;
+}
+.app-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+/* Cartes Glassmorphism Kawaii */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 242, 254, 0.4);
+}
+
+/* Boutons et éléments interactifs */
+.btn-neon {
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+  color: #070b19;
+  font-weight: 600;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
+  transition: opacity 0.2s;
+}
+
+.btn-neon:hover {
+  opacity: 0.9;
+}
+
+/* Barre de navigation inférieure */
+.nav-bar {
+  height: 70px;
+  background: rgba(7, 11, 25, 0.9);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.nav-item {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-item.active, .nav-item:hover {
+  color: var(--neon-cyan);
+}
+
+.nav-item i {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 4px;
+}
