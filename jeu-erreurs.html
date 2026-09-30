@@ -17,7 +17,7 @@ body {
     color: #ffffff;
     min-height: 100vh;
     overflow-x: hidden;
-    overflow-y: scroll; /* Empêche le saut en figeant la largeur de la page */
+    overflow-y: scroll;
 }
 
 .container {
@@ -56,7 +56,7 @@ body {
     transform: translateY(-1px);
 }
 
-.badge-xp {
+.badge-manche {
     font-size: 13px;
     color: #ffd166;
     font-weight: 700;
@@ -70,14 +70,13 @@ body {
 }
 
 /* =========================================
-   EN-TÊTE & NOX ANIMÉ SÉCURISÉ
+   EN-TÊTE & NOX ANIMÉ
    ========================================= */
 .header {
     text-align: center;
     margin-bottom: 20px;
 }
 
-/* Conteneur à taille fixe pour éviter de pousser le reste de la page */
 .nox-container {
     width: 100%;
     height: 105px;
@@ -99,24 +98,14 @@ body {
 }
 
 @keyframes briller {
-    0% {
-        filter: drop-shadow(0 0 8px #7FE7FF);
-    }
-    50% {
-        filter: drop-shadow(0 0 25px #E2A7FF);
-    }
-    100% {
-        filter: drop-shadow(0 0 8px #7FE7FF);
-    }
+    0% { filter: drop-shadow(0 0 8px #7FE7FF); }
+    50% { filter: drop-shadow(0 0 25px #E2A7FF); }
+    100% { filter: drop-shadow(0 0 8px #7FE7FF); }
 }
 
 @keyframes flotter {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-8px);
-    }
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
 }
 
 .header h1 {
@@ -183,7 +172,7 @@ body {
 }
 
 /* =========================================
-   ZONE DE COURS & MOTS INTERACTIFS
+   ZONE DE TEXTE ET CLICS
    ========================================= */
 .book-area {
     background: rgba(10, 15, 35, 0.85);
@@ -222,9 +211,9 @@ body {
 }
 
 /* =========================================
-   BOUTONS & ÉCRAN DE RÉCOMPENSE
+   BOUTON DE SUITE & RÉCOMPENSE
    ========================================= */
-button.btn-valider {
+button.btn-action {
     width: 100%;
     padding: 16px;
     border: none;
@@ -239,13 +228,9 @@ button.btn-valider {
     transition: opacity 0.2s ease, transform 0.1s ease;
 }
 
-button.btn-valider:hover {
+button.btn-action:hover {
     opacity: 0.92;
     transform: translateY(-1px);
-}
-
-button.btn-valider:active {
-    transform: translateY(1px);
 }
 
 .reward {
@@ -270,17 +255,17 @@ button.btn-valider:active {
         <a href="index.html" class="btn-retour">
             <i class="fa-solid fa-arrow-left"></i> Retour au QG
         </a>
-        <div class="badge-xp">
-            <i class="fa-solid fa-star"></i> +50 XP
+        <div class="badge-manche">
+            <i class="fa-solid fa-flag-checkered"></i> Manche : <span id="manche-text">1 / 10</span>
         </div>
     </div>
 
     <div class="header">
         <div class="nox-container">
-            <img class="nox" id="nox-img" src="Images/Nox.png" alt="Nox">
+            <img class="nox" id="nox-img" src="images/Nox.png" alt="Nox">
         </div>
         <h1>Chasse aux erreurs</h1>
-        <p>Aide Nox à débusquer les 3 erreurs cachées dans la leçon !</p>
+        <p>Aide Nox à débusquer les 2 erreurs cachées dans chaque texte !</p>
         <div id="lesson-title" class="lesson-badge">
             <i class="fa-solid fa-spinner fa-spin"></i> Chargement de la leçon...
         </div>
@@ -288,8 +273,8 @@ button.btn-valider:active {
 
     <div class="card">
         <div class="status-bar">
-            <span>Erreurs trouvées :</span>
-            <span><span id="count">0</span> / 3</span>
+            <span>Erreurs de ce texte :</span>
+            <span><span id="count">0</span> / 2</span>
         </div>
 
         <div class="progress">
@@ -297,16 +282,16 @@ button.btn-valider:active {
         </div>
 
         <div class="book-area" id="lesson-content">
-            <p><i class="fa-solid fa-spinner fa-spin"></i> Analyse de ton document...</p>
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Préparation des défis...</p>
         </div>
 
-        <button class="btn-valider" onclick="finishGame()">
-            Vérifier et restaurer la page
+        <button class="btn-action" id="btn-suite" onclick="passerTexteSuivant()">
+            Vérifier et passer au texte suivant
         </button>
 
         <div id="reward" class="reward">
-            ⭐ Bravo Coco !<br>
-            Toutes les erreurs ont été éliminées (+50 XP pour Nox) !
+            ⭐ Fantastique Coco !<br>
+            Les 10 textes ont été corrigés avec brio (+50 XP pour Nox) !
         </div>
     </div>
 
@@ -317,17 +302,29 @@ button.btn-valider:active {
     import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
     const ELEVE_ID = "coco";
-    const TOTAL_ERREURS = 3;
-    let found = 0;
+    const TOTAL_MANCHES = 10;
+    const ERREURS_PAR_MANCHE = 2;
 
-    const BANQUE_INTRUS = [
-        "carré", "inversé", "inexistant", "facultatif", "immobile", 
-        "vertical", "horizontal", "artificiel", "négatif", "inutile"
+    let mancheActuelle = 1;
+    let erreursTrouvees = 0;
+    let titreLecon = "Géographie & Cartographie";
+
+    // 10 thématiques distinctes pour varier chacun des 10 textes
+    const SUJETS_10_TEXTES = [
+        { theme: "l'équateur", repere: "la latitude 0 degré", faux1: "incliné à 90 degrés", faux2: "passe uniquement par l'Arctique" },
+        { theme: "le méridien de Greenwich", repere: "la longitude de référence", faux1: "totalement invisible sur le globe", faux2: "traverse le centre de Tokyo" },
+        { theme: "les parallèles", repere: "les cercles imaginaires", faux1: "se croisent tous aux pôles", faux2: "sont tracés en zigzag" },
+        { theme: "les méridiens", repere: "les demi-cercles joignant les pôles", faux1: "sont strictement horizontaux", faux2: "mesurent la température de l'eau" },
+        { theme: "la latitude", repere: "la distance par rapport à l'équateur", faux1: "se calcule en kilomètres cubes", faux2: "ne dépasse jamais 10 degrés" },
+        { theme: "la longitude", repere: "l'écart Est ou Ouest", faux1: "est mesurée par un thermomètre", faux2: "reste toujours égale à zéro" },
+        { theme: "l'hémisphère Nord", repere: "la moitié boréale du globe", faux1: "contient le pôle Sud", faux2: "n'a aucune terre émergée" },
+        { theme: "l'hémisphère Sud", repere: "la zone australe", faux1: "est chauffé par deux soleils", faux2: "se situe au-dessus de l'équateur" },
+        { theme: "l'échelle d'une carte", repere: "le rapport de réduction", faux1: "agrandit la Terre 50 fois", faux2: "sert à mesurer le poids du papier" },
+        { theme: "la rose des vents", repere: "l'indicateur des points cardinaux", faux1: "indique l'âge des explorateurs", faux2: "tourne en rond en permanence" }
     ];
 
-    async function chargerLecon() {
+    async function initialiserJeu() {
         const badge = document.getElementById("lesson-title");
-        const content = document.getElementById("lesson-content");
 
         try {
             const q = query(
@@ -337,51 +334,37 @@ button.btn-valider:active {
             );
             const querySnapshot = await getDocs(q);
 
-            let titre = "Leçon active";
-            let concepts = [];
-            let texteComplet = "";
-
             if (!querySnapshot.empty) {
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data.titre) titre = data.titre;
-                    if (data.conceptsCles) concepts = data.conceptsCles;
-                    if (data.texte) texteComplet = data.texte;
+                    if (data.titre) titreLecon = data.titre;
                 });
             }
-
-            badge.innerHTML = `<i class="fa-solid fa-book-open"></i> ${titre}`;
-            genererDefiDynamique(titre, concepts, texteComplet);
-
         } catch (err) {
-            console.error("Erreur Firestore :", err);
-            badge.textContent = "Entraînement de secours";
-            genererDefiDynamique("Révision générale", ["notions", "règles", "repères"], "");
+            console.error("Firestore:", err);
         }
+
+        badge.innerHTML = `<i class="fa-solid fa-book-open"></i> ${titreLecon}`;
+        afficherManche(mancheActuelle);
     }
 
-    function genererDefiDynamique(titre, concepts, texte) {
+    function afficherManche(index) {
+        erreursTrouvees = 0;
+        document.getElementById("count").innerText = "0";
+        document.getElementById("bar").style.width = "0%";
+        document.getElementById("manche-text").innerText = `${index} / ${TOTAL_MANCHES}`;
+
+        const donnees = SUJETS_10_TEXTES[index - 1];
         const content = document.getElementById("lesson-content");
 
-        const pieges = [...BANQUE_INTRUS].sort(() => 0.5 - Math.random()).slice(0, 3);
-        
-        const c1 = concepts[0] || "l'axe central";
-        const c2 = concepts[1] || "la latitude";
-        const c3 = concepts[2] || "l'hémisphère";
-
-        const phrases = [
-            `Dans le document sur <span class="word-click" onclick="clickWord(this, false)">${titre}</span>, `,
-            `on étudie comment organiser <span class="word-click" onclick="clickWord(this, false)">les repères essentiels</span>. `,
-            `Il est stipulé que <span class="word-click" onclick="clickWord(this, false)">${c1}</span> `,
-            `adopte toujours un format <span class="word-click" onclick="clickWord(this, true)">${pieges[0]}</span> `,
-            `pour faciliter l'orientation. Concernant <span class="word-click" onclick="clickWord(this, false)">${c2}</span>, `,
-            `certaines personnes pensent qu'il est <span class="word-click" onclick="clickWord(this, true)">${pieges[1]}</span> `,
-            `alors qu'il détermine la position exacte. Enfin, pour bien délimiter <span class="word-click" onclick="clickWord(this, false)">${c3}</span>, `,
-            `on évite d'utiliser un calcul <span class="word-click" onclick="clickWord(this, true)">${pieges[2]}</span> `,
-            `qui fausserait toute la carte.`
-        ];
-
-        content.innerHTML = phrases.join("");
+        content.innerHTML = `
+            Dans l'extrait <strong>n°${index}</strong> du cours sur <em>${titreLecon}</em>, Nox examine les règles relatives à 
+            <span class="word-click" onclick="clickWord(this, false)">${donnees.theme}</span>. 
+            Le carnet indique qu'il représente fidèlement <span class="word-click" onclick="clickWord(this, false)">${donnees.repere}</span>. 
+            Pourtant, un schéma erroné prétend qu'il est <span class="word-click" onclick="clickWord(this, true)">${donnees.faux1}</span>. 
+            De plus, une note secondaire ajoute qu'il <span class="word-click" onclick="clickWord(this, true)">${donnees.faux2}</span>, 
+            ce qui contredit totalement la carte.
+        `;
     }
 
     window.clickWord = function(element, isError) {
@@ -390,9 +373,16 @@ button.btn-valider:active {
         if (isError) {
             element.classList.remove("wrong-click");
             element.classList.add("correct-error");
-            found++;
-            document.getElementById("count").innerText = found;
-            document.getElementById("bar").style.width = (found / TOTAL_ERREURS) * 100 + "%";
+            erreursTrouvees++;
+            document.getElementById("count").innerText = erreursTrouvees;
+            document.getElementById("bar").style.width = (erreursTrouvees / ERREURS_PAR_MANCHE) * 100 + "%";
+
+            // Si les 2 erreurs du texte courant sont trouvées
+            if (erreursTrouvees === ERREURS_PAR_MANCHE) {
+                setTimeout(() => {
+                    passerTexteSuivant();
+                }, 800);
+            }
         } else {
             element.classList.add("wrong-click");
             setTimeout(() => {
@@ -401,19 +391,26 @@ button.btn-valider:active {
         }
     };
 
-    window.finishGame = function() {
-        if (found < TOTAL_ERREURS) {
-            alert(`Il reste encore ${TOTAL_ERREURS - found} erreur(s) à démasquer !`);
+    window.passerTexteSuivant = function() {
+        if (erreursTrouvees < ERREURS_PAR_MANCHE) {
+            alert(`Il reste encore ${ERREURS_PAR_MANCHE - erreursTrouvees} erreur(s) à démasquer dans ce texte !`);
             return;
         }
 
-        document.getElementById("reward").style.display = "block";
-        setTimeout(() => {
-            window.location.href = "index.html";
-        }, 2500);
+        if (mancheActuelle < TOTAL_MANCHES) {
+            mancheActuelle++;
+            afficherManche(mancheActuelle);
+        } else {
+            document.getElementById("lesson-content").style.display = "none";
+            document.getElementById("btn-suite").style.display = "none";
+            document.getElementById("reward").style.display = "block";
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 3000);
+        }
     };
 
-    chargerLecon();
+    initialiserJeu();
 </script>
 
 </body>
