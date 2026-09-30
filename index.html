@@ -3,126 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mon Tuteur Magique</title>
+  <title>Mon Tuteur Magique - Nox</title>
   
   <!-- Polices et Icônes -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Styles principaux -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- Styles complémentaires pour la grille et la progression -->
+  <style>
+    .progress-labels { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; font-weight: 600; }
+    .progress-bar-bg { height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 68%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan)); border-radius: 10px; box-shadow: 0 0 10px rgba(0, 242, 254, 0.5); }
+    
+    .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+    .game-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; cursor: pointer; transition: all 0.3s ease; }
+    .game-card:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--neon-cyan); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2); }
+    .game-card i { font-size: 22px; color: var(--neon-cyan); margin-bottom: 8px; }
+    .game-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #fff; }
+    .game-card p { font-size: 11px; color: var(--text-muted); }
+  </style>
 </head>
 <body>
 
-  <!-- CONTENEUR SMARTPHONE -->
   <div class="phone-container">
     <div class="notch"></div>
 
-    <div class="content-area">
+    <!-- En-tête Nox Kawaii -->
+    <div class="nox-header">
+      <div class="nox-title">
+        <h1>Bonjour Coco ! ✨</h1>
+        <p>Prêt pour de nouvelles aventures ?</p>
+      </div>
+      <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
+        <i class="fa-solid fa-bell" style="color: var(--neon-cyan); font-size: 20px;"></i>
+      </div>
+    </div>
+
+    <!-- Zone de contenu (Scrollable) -->
+    <div class="app-content">
       
-      <!-- En-tête -->
-      <div class="header">
+      <!-- Carte Compagnon Nox -->
+      <div class="glass-card" style="display: flex; gap: 15px; align-items: center; background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(15, 23, 42, 0.4) 100%);">
+        <div style="font-size: 45px; filter: drop-shadow(0 0 10px var(--neon-cyan));">👻</div>
         <div>
-          <h1>Bonjour Coco ! 👋</h1>
-          <p>Prêt pour de nouvelles aventures ?</p>
-        </div>
-        <div class="avatar-btn"><i class="fa-solid fa-bell"></i></div>
-      </div>
-
-      <!-- Compagnon (Tuteur) -->
-      <div class="glass-card tutor-zone">
-        <div class="tutor-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
-        <div class="tutor-speech">
-          <h3 id="tutor-title">Nox est avec toi !</h3>
-          <p id="tutor-message">Nouvelle base propre activée. Prêt à étudier ?</p>
+          <h3 style="font-size: 16px; margin-bottom: 4px; color: var(--neon-cyan);">Nox est avec toi !</h3>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">On continue ? Encore une petite leçon !</p>
         </div>
       </div>
 
-      <!-- Progression -->
+      <!-- Carte Progression -->
       <div class="glass-card">
         <div class="progress-labels">
           <span>Progression globale</span>
-          <span style="color: #fda085;">68%</span>
+          <span style="color: var(--neon-cyan);">68%</span>
         </div>
         <div class="progress-bar-bg">
           <div class="progress-bar-fill"></div>
         </div>
       </div>
 
-      <!-- ALERTE NINJA (Cachée par défaut) -->
-      <div class="glass-card" id="ninja-alert" style="display: none;">
-        <h3><i class="fa-solid fa-user-ninja"></i> Mode Ninja Activé</h3>
-        <p style="font-size: 13px; color: #cbd5e1;">Erreurs détectées dans ton profil :</p>
-        <ul class="ninja-list" id="erreurs-list"></ul>
-        <button class="btn-primary btn-ninja"><i class="fa-solid fa-bolt"></i> Lancer le défi de révision</button>
-      </div>
-
-      <!-- ZONE SCANNER DE MATIÈRE -->
-      <div class="glass-card scanner-zone">
-        <i class="fa-solid fa-folder-tree" style="font-size: 32px; color: #fbc2eb; margin-bottom: 10px;"></i>
-        <h3 style="margin-bottom: 8px;">Dossier Fiches & Matière</h3>
-        <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 15px;">Importe tes cours ou tes notes</p>
+      <!-- Carte Zone Scanner -->
+      <div class="glass-card" style="text-align: center;">
+        <i class="fa-solid fa-camera-retro" style="font-size: 32px; color: var(--neon-blue); margin-bottom: 12px; filter: drop-shadow(0 0 8px var(--neon-blue));"></i>
+        <h3 style="font-size: 16px; margin-bottom: 6px;">Dossier Fiches & Matière</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 18px;">Importe tes cours pour que Nox les analyse.</p>
         
-        <input type="file" id="camera-input" accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
-        
-        <button onclick="document.getElementById('camera-input').click()" class="btn-primary btn-scan">
-          <i class="fa-solid fa-plus"></i> Importer une fiche
+        <input type="file" id="camera-input" accept="image/*,.pdf" style="display: none;">
+        <button class="btn-neon" onclick="document.getElementById('camera-input').click()" style="width: 100%;">
+          <i class="fa-solid fa-plus"></i> Analyser un cours
         </button>
         
-        <!-- Prévisualisation -->
-        <div id="preview-zone" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 2px dashed rgba(255,255,255,0.2);">
-          <img id="image-preview" style="width: 100%; border-radius: 8px; display: none;" />
-          <div id="doc-preview" style="display: none; text-align: center;">
-            <i class="fa-solid fa-file-lines" style="font-size: 40px; color: #a18cd1; margin-bottom: 10px;"></i>
-            <p id="doc-name" style="font-size: 14px; font-weight: bold; word-break: break-all;"></p>
-          </div>
-          <p id="analysis-text" style="font-size: 13px; color: #00f2fe; margin-top: 10px; font-weight: bold;">
-            <i class="fa-solid fa-spinner fa-spin"></i> Sauvegarde en cours...
-          </p>
-        </div>
+        <p id="analysis-text" style="font-size: 13px; margin-top: 15px; font-weight: 600;"></p>
+        <img id="image-preview" style="width: 100%; border-radius: 12px; display: none; margin-top: 15px; border: 1px solid var(--glass-border);" />
       </div>
 
-      <!-- SÉLECTEUR DES 15 MODES DE JEU -->
+      <!-- Carte Grille des Jeux -->
       <div class="glass-card">
-        <h3 style="margin-bottom: 10px; font-size: 16px;"><i class="fa-solid fa-gamepad" style="color: #00f2fe; margin-right: 8px;"></i> Les 15 Mondes & Jeux</h3>
-        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 15px;">Choisis ton aventure interactive :</p>
+        <h3 style="font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-gamepad" style="color: var(--neon-cyan);"></i> Les Mondes
+        </h3>
+        <p style="font-size: 12px; color: var(--text-muted);">Choisis ton aventure interactive :</p>
         
         <div class="games-grid">
-          <div class="game-card" onclick="lancerJeu('Compagnon IA')"><i class="fa-solid fa-dragon" style="color: #fda085;"></i><h4>1. Compagnon IA</h4><p>Nourris ta créature.</p></div>
-          <div class="game-card" onclick="lancerJeu('Donjon Magique')"><i class="fa-solid fa-dungeon" style="color: #a18cd1;"></i><h4>2. Donjons</h4><p>Donjon unique.</p></div>
-          <div class="game-card" onclick="lancerJeu('Chasse aux erreurs')"><i class="fa-solid fa-bullseye" style="color: #ff5858;"></i><h4>3. Chasse pièges</h4><p>Trouve les erreurs.</p></div>
-          <div class="game-card" onclick="lancerJeu('Combat de monstres')"><i class="fa-solid fa-wand-sparkles" style="color: #4facfe;"></i><h4>4. Combat</h4><p>Sortilège magique.</p></div>
-          <div class="game-card" onclick="lancerJeu('Détective scientifique')"><i class="fa-solid fa-magnifying-glass" style="color: #f6d365;"></i><h4>5. Détective</h4><p>Résous l'enquête.</p></div>
-          <div class="game-card" onclick="lancerJeu('Construis ton monde')"><i class="fa-solid fa-helmet-safety" style="color: #00f2fe;"></i><h4>6. Bâtisseur</h4><p>Gagne des ressources.</p></div>
-          <div class="game-card" onclick="lancerJeu('Puzzle intelligent')"><i class="fa-solid fa-puzzle-piece" style="color: #fbc2eb;"></i><h4>7. Puzzle</h4><p>Reconstitue l'image.</p></div>
-          <div class="game-card" onclick="lancerJeu('Cartes à collectionner')"><i class="fa-solid fa-clone" style="color: #fda085;"></i><h4>8. Cartes clés</h4><p>Bâtis ton set.</p></div>
-          <div class="game-card" onclick="lancerJeu('Voyage mondial')"><i class="fa-solid fa-earth-americas" style="color: #4facfe;"></i><h4>9. Voyage</h4><p>Nouvelles destinations.</p></div>
-          <div class="game-card" onclick="lancerJeu('Simulation pro')"><i class="fa-solid fa-user-tie" style="color: #a18cd1;"></i><h4>10. Simulation</h4><p>Incarne un rôle.</p></div>
-          <div class="game-card" onclick="lancerJeu('Course éducative')"><i class="fa-solid fa-flag-checkered" style="color: #f6d365;"></i><h4>11. Course</h4><p>Avance ton vaisseau.</p></div>
-          <div class="game-card" onclick="lancerJeu('Mémoire évolutive')"><i class="fa-solid fa-brain" style="color: #ff5858;"></i><h4>12. Mémoire</h4><p>Retiens tout.</p></div>
-          <div class="game-card" onclick="lancerJeu('Tower Defense')"><i class="fa-solid fa-chess-rook" style="color: #00f2fe;"></i><h4>13. Tower Defense</h4><p>Place des tours.</p></div>
-          <div class="game-card" onclick="lancerJeu('Style Pokémon')"><i class="fa-solid fa-paw" style="color: #fbc2eb;"></i><h4>14. Pokémon</h4><p>Fais évoluer.</p></div>
-          <div class="game-card" onclick="lancerJeu('Livre interactif')"><i class="fa-solid fa-book-open-reader" style="color: #fda085;"></i><h4>15. Héros</h4><p>Vis l'histoire.</p></div>
+          <div class="game-card" onclick="lancerJeu('Compagnon IA')"><i class="fa-solid fa-ghost"></i><h4>1. Compagnon</h4><p>Nourris Nox.</p></div>
+          <div class="game-card" onclick="lancerJeu('Donjon Magique')"><i class="fa-solid fa-dungeon"></i><h4>2. Donjons</h4><p>Explore les ruines.</p></div>
+          <div class="game-card" onclick="lancerJeu('Chasse aux erreurs')"><i class="fa-solid fa-bullseye"></i><h4>3. Chasse pièges</h4><p>Trouve les erreurs.</p></div>
+          <div class="game-card" onclick="lancerJeu('Combat de monstres')"><i class="fa-solid fa-wand-sparkles"></i><h4>4. Combat</h4><p>Lance des sorts.</p></div>
+          <div class="game-card" onclick="lancerJeu('Détective')"><i class="fa-solid fa-magnifying-glass"></i><h4>5. Détective</h4><p>Mène l'enquête.</p></div>
+          <div class="game-card" onclick="lancerJeu('Bâtisseur')"><i class="fa-solid fa-hammer"></i><h4>6. Bâtisseur</h4><p>Construis ta ville.</p></div>
         </div>
       </div>
-
+      
     </div>
 
-    <!-- Navigation du bas -->
-    <div class="bottom-nav">
-      <div class="nav-item active"><i class="fa-solid fa-house"></i><span>Accueil</span></div>
-      <div class="nav-item"><i class="fa-solid fa-book-open"></i><span>Cours</span></div>
-      <div class="nav-item" style="position: relative; top: -15px;">
-        <div style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; color: white; box-shadow: 0 10px 20px rgba(161, 140, 209, 0.4);">
+    <!-- Barre de Navigation inférieure -->
+    <div class="nav-bar">
+      <div class="nav-item active"><i class="fa-solid fa-house"></i>Accueil</div>
+      <div class="nav-item"><i class="fa-solid fa-book-open"></i>Cours</div>
+      <div class="nav-item" style="position: relative; top: -20px;">
+        <div style="background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan)); width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #070b19; font-size: 24px; box-shadow: 0 8px 20px rgba(0, 242, 254, 0.5); cursor: pointer;">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
         </div>
       </div>
-      <div class="nav-item"><i class="fa-solid fa-layer-group"></i><span>Fiches</span></div>
-      <div class="nav-item"><i class="fa-solid fa-ellipsis"></i><span>Plus</span></div>
+      <div class="nav-item"><i class="fa-solid fa-chart-simple"></i>Stats</div>
+      <div class="nav-item"><i class="fa-solid fa-ellipsis"></i>Plus</div>
     </div>
   </div>
-
-  <!-- Script Firebase et logique modulaire -->
+  
+  <!-- Script métier -->
   <script type="module" src="firebase.js"></script>
 </body>
 </html>
