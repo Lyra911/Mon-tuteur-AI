@@ -68,7 +68,7 @@
       z-index: 10;
     }
 
-    /* En-tête Nox Kawaii */
+    /* En-tête Nox */
     .nox-header {
       padding: 35px 20px 15px 20px;
       display: flex;
@@ -90,21 +90,34 @@
       margin-top: 2px;
     }
 
-    /* Animation Nox */
+    /* Animation Nox : Flotte et Brille */
     .nox {
-      animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
-      cursor: pointer;
+      display: inline-block;
+      user-select: none;
+      animation:
+        flotter 4s ease-in-out infinite,
+        briller 2s ease-in-out infinite;
     }
 
     @keyframes briller {
-      0% { filter: drop-shadow(0 0 10px #7FE7FF); }
-      50% { filter: drop-shadow(0 0 30px #E2A7FF); }
-      100% { filter: drop-shadow(0 0 10px #7FE7FF); }
+      0% {
+        filter: drop-shadow(0 0 10px #7FE7FF);
+      }
+      50% {
+        filter: drop-shadow(0 0 30px #E2A7FF);
+      }
+      100% {
+        filter: drop-shadow(0 0 10px #7FE7FF);
+      }
     }
 
     @keyframes flotter {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
     }
 
     /* Zone de contenu défilante */
@@ -148,7 +161,7 @@
       background: rgba(0, 242, 254, 0.1);
     }
 
-    /* Grille des 15 Mondes */
+    /* Titre de section */
     .section-title {
       font-size: 15px;
       font-weight: 700;
@@ -159,6 +172,7 @@
       gap: 8px;
     }
 
+    /* Grille des mini-jeux */
     .games-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -175,7 +189,7 @@
       gap: 6px;
       text-decoration: none;
       color: var(--text-main);
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
     }
 
     .game-card:hover {
@@ -269,14 +283,14 @@
   <div class="phone-container">
     <div class="notch"></div>
 
-    <!-- En-tête -->
+    <!-- En-tête avec l'illustration officielle de Nox -->
     <header class="nox-header">
       <div class="nox-title">
         <h1>Bonjour Coco ! ✨</h1>
         <p>Prêt pour de nouvelles aventures ?</p>
       </div>
-      <div class="nox text-3xl">
-        👻
+      <div>
+        <img src="images/Nox.png" alt="Nox" class="nox" style="width: 58px; height: 58px; object-fit: contain;">
       </div>
     </header>
 
@@ -445,7 +459,7 @@
     }
   </script>
 
-  <!-- Script Firebase & Orchestrateur -->
+  <!-- Module Firebase & Orchestrateur -->
   <script type="module" src="./firebase.js"></script>
 </body>
 </html>
