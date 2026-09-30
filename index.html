@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 
-  <!-- Styles complémentaires pour la grille et la progression -->
+  <!-- Styles complémentaires pour la grille, la progression et le tiroir des jeux -->
   <style>
     .progress-labels { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; font-weight: 600; }
     .progress-bar-bg { height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
@@ -22,6 +22,29 @@
     .game-card i { font-size: 22px; color: var(--neon-cyan); margin-bottom: 8px; }
     .game-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #fff; }
     .game-card p { font-size: 11px; color: var(--text-muted); }
+
+    /* Styles pour la section cachée des autres jeux */
+    #extra-games { display: none; }
+    .btn-toggle-games {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--glass-border);
+      color: var(--neon-cyan);
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      margin-top: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .btn-toggle-games:hover {
+      background: rgba(0, 242, 254, 0.15);
+    }
   </style>
 </head>
 <body>
@@ -78,13 +101,14 @@
         <img id="image-preview" style="width: 100%; border-radius: 12px; display: none; margin-top: 15px; border: 1px solid var(--glass-border);" />
       </div>
 
-      <!-- Carte Grille des Jeux -->
+      <!-- Carte Grille des 15 Mondes & Jeux -->
       <div class="glass-card">
         <h3 style="font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-gamepad" style="color: var(--neon-cyan);"></i> Les Mondes
+          <i class="fa-solid fa-gamepad" style="color: var(--neon-cyan);"></i> Les 15 Mondes
         </h3>
         <p style="font-size: 12px; color: var(--text-muted);">Choisis ton aventure interactive :</p>
         
+        <!-- Les 6 premiers jeux visibles -->
         <div class="games-grid">
           <div class="game-card" onclick="lancerJeu('Compagnon IA')"><i class="fa-solid fa-ghost"></i><h4>1. Compagnon</h4><p>Nourris Nox.</p></div>
           <div class="game-card" onclick="lancerJeu('Donjon Magique')"><i class="fa-solid fa-dungeon"></i><h4>2. Donjons</h4><p>Explore les ruines.</p></div>
@@ -93,6 +117,26 @@
           <div class="game-card" onclick="lancerJeu('Détective')"><i class="fa-solid fa-magnifying-glass"></i><h4>5. Détective</h4><p>Mène l'enquête.</p></div>
           <div class="game-card" onclick="lancerJeu('Bâtisseur')"><i class="fa-solid fa-hammer"></i><h4>6. Bâtisseur</h4><p>Construis ta ville.</p></div>
         </div>
+
+        <!-- Les 9 jeux suivants (masqués par défaut) -->
+        <div id="extra-games">
+          <div class="games-grid">
+            <div class="game-card" onclick="lancerJeu('Laboratoire')"><i class="fa-solid fa-flask"></i><h4>7. Labo</h4><p>Expériences.</p></div>
+            <div class="game-card" onclick="lancerJeu('Arène de Quiz')"><i class="fa-solid fa-brain"></i><h4>8. Quiz Arena</h4><p>Défis rapides.</p></div>
+            <div class="game-card" onclick="lancerJeu('Voyage Spatial')"><i class="fa-solid fa-rocket"></i><h4>9. Espace</h4><p>Explore les astres.</p></div>
+            <div class="game-card" onclick="lancerJeu('Jardin Secret')"><i class="fa-solid fa-seedling"></i><h4>10. Jardin</h4><p>Fais pousser.</p></div>
+            <div class="game-card" onclick="lancerJeu('Bibliothèque')"><i class="fa-solid fa-book-bookmark"></i><h4>11. Ancien</h4><p>Manuscrits.</p></div>
+            <div class="game-card" onclick="lancerJeu('Musique & Rythme')"><i class="fa-solid fa-music"></i><h4>12. Rythme</h4><p>Notes musicales.</p></div>
+            <div class="game-card" onclick="lancerJeu('Portail Mystique')"><i class="fa-solid fa-ring"></i><h4>13. Portail</h4><p>Énigmes.</p></div>
+            <div class="game-card" onclick="lancerJeu('Ordonnance')"><i class="fa-solid fa-puzzle-piece"></i><h4>14. Logique</h4><p>Puzzles.</p></div>
+            <div class="game-card" onclick="lancerJeu('Temple du Temps')"><i class="fa-solid fa-hourglass-start"></i><h4>15. Chrono</h4><p>Contre la montre.</p></div>
+          </div>
+        </div>
+
+        <!-- Bouton flèche pour dérouler / enrouler les jeux -->
+        <button class="btn-toggle-games" id="toggle-btn" onclick="toggleGames()">
+          <span id="toggle-text">Voir les 9 autres mondes</span> <i class="fa-solid fa-chevron-down" id="toggle-icon"></i>
+        </button>
       </div>
       
     </div>
@@ -111,7 +155,26 @@
     </div>
   </div>
   
-  <!-- Script métier -->
+  <!-- Script pour dérouler les jeux -->
+  <script>
+    function toggleGames() {
+      const extraGames = document.getElementById('extra-games');
+      const toggleText = document.getElementById('toggle-text');
+      const toggleIcon = document.getElementById('toggle-icon');
+      
+      if (extraGames.style.display === 'block') {
+        extraGames.style.display = 'none';
+        toggleText.textContent = 'Voir les 9 autres mondes';
+        toggleIcon.className = 'fa-solid fa-chevron-down';
+      } else {
+        extraGames.style.display = 'block';
+        toggleText.textContent = 'Moins de mondes';
+        toggleIcon.className = 'fa-solid fa-chevron-up';
+      }
+    }
+  </script>
+
+  <!-- Script métier Firebase -->
   <script type="module" src="firebase.js"></script>
 </body>
 </html>
