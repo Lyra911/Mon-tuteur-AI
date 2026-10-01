@@ -5,11 +5,11 @@
 import { db } from "../firebase.js";
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// L'URL de ton Web App Apps Script
-const URL_RELAIS = "https://script.google.com/macros/s/AKfycbzR7fX4F_p5Vv7G-F_Zf_y6c_w0vH8bE/exec"; // Mets ton URL /exec ici
+// L'URL réelle de ton Web App Apps Script
+const URL_RELAIS = "https://script.google.com/macros/s/AKfycbzbvHkVRVNowyy_98Dpv44WinuqK0FmQ88HO4Q-DvcWg45P4UhH9vzzw10jmraVEDzx/exec";
 
 export const OrchestrateurAI = {
-  // Alias requis par l'appel dans firebase.js
+  // Alias pour correspondre à l'appel dans firebase.js
   async analyserFiche(imagesBase64, eleveId = "coco") {
     return await this.traiterDocumentComplet(imagesBase64, eleveId);
   },
