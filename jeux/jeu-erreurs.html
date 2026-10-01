@@ -302,9 +302,22 @@ button.btn-action:hover {
 </div>
 
 <script type="module">
-    import { db } from "../firebase.js";
-    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import { ImageService } from "../services/imageService.js";
+
+    // Initialisation autonome
+    const firebaseConfig = {
+      apiKey: "AIzaSyD0GbueWsIm8kaUnB6sZYykYSZl11s2JTs",
+      authDomain: "tuteur-ai.firebaseapp.com",
+      projectId: "tuteur-ai",
+      storageBucket: "tuteur-ai.firebasestorage.app",
+      messagingSenderId: "1025983965857",
+      appId: "1:1025983965857:web:121d32b494c8433f9f1ee0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     const ELEVE_ID = "coco";
     let TOTAL_MANCHES = 1;
@@ -314,102 +327,94 @@ button.btn-action:hover {
     let erreursTrouvees = 0;
     let manchesActives = [];
 
-    // Intrus pédagogiques naturels pour la chasse
-    const FAUX_MOTS = [
-        "fait d'acier", 
-        "totalement invisible", 
-        "en plastique transparent", 
-        "brûlé par le soleil", 
-        "rempli d'essence", 
-        "solide comme du ciment", 
-        "inversé", 
-        "peint en noir opaque"
+    // Intrus simples qui respectent la syntaxe des phrases
+    const MOTS_INTRUS = [
+        "inverse", "impossible", "artificiel", "détruit", 
+        "bloqué", "inactif", "stérile", "déformé", "extérieur"
     ];
 
     function transformerNotionEnManche(notion, imageUrl) {
-        const def = notion.definition || "Définition de la notion.";
+        const def = notion.definition || "Description de la notion.";
         const mots = def.split(" ");
         
         let candidats = [];
         mots.forEach((m, idx) => {
-            // Repère les mots substantiels à remplacer
-            if (m.length >= 5 && !m.includes("<") && !m.includes(">")) {
-                candidats.push(idx);
+            const nettoye = m.replace(/[.,;:!?()]/g, "");
+            if (nettoye.length >= 5) {
+                candidats.push({ index: idx, mot: nettoye });
             }
         });
 
         const indexErreurs = [];
         while (candidats.length > 0 && indexErreurs.length < 2) {
-            const randomIndex = Math.floor(Math.random() * candidats.length);
-            indexErreurs.push(candidats.splice(randomIndex, 1)[0]);
+            const r = Math.floor(Math.random() * candidats.length);
+            indexErreurs.push(candidats.splice(r, 1)[0].index);
         }
 
         const motsTransformes = mots.map((mot, idx) => {
+            const ponctuation = mot.match(/[.,;:!?)]+$/)?.[0] || "";
             if (indexErreurs.includes(idx)) {
-                const intrus = FAUX_MOTS[Math.floor(Math.random() * FAUX_MOTS.length)];
+                const intrus = MOTS_INTRUS[Math.floor(Math.random() * MOTS_INTRUS.length)] + ponctuation;
                 return `<span class="word-click" onclick="clickWord(this, true)">${intrus}</span>`;
             } else {
-                if (mot.length > 5 && Math.random() > 0.55) {
+                if (mot.length > 6 && Math.random() > 0.5) {
                     return `<span class="word-click" onclick="clickWord(this, false)">${mot}</span>`;
                 }
                 return mot;
             }
         });
 
+        const baliseImage = imageUrl 
+            ? `<img src="${imageUrl}" class="schema-img" alt="${notion.terme}">`
+            : `<div style="padding:20px; font-weight:bold; color:#7fe7ff; font-size:18px;">🌍 ${notion.terme}</div>`;
+
         return {
             titre: notion.terme,
-            schema: `<img src="${imageUrl}" class="schema-img" alt="${notion.terme}">`,
+            schema: baliseImage,
             texte: `<strong>${notion.terme} :</strong> ${motsTransformes.join(" ")}`,
             nbErreurs: indexErreurs.length
         };
     }
 
     async function initialiserJeu() {
+        console.log("🎮 Connexion à Firestore pour Coco...");
         try {
-            // Lecture directe de toutes les fiches de coco pour prendre la plus récente
-            const snapshot = await getDocs(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"));
+            const snap = await getDocs(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"));
+            console.log(`📄 Fiches trouvées : ${snap.size}`);
 
-            let ficheScanne = null;
-            if (!snapshot.empty) {
-                const docs = snapshot.docs.map(d => d.data());
-                // Trie par date/timestamp décroissant
+            let derniereFiche = null;
+            if (!snap.empty) {
+                const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                // Classement pour obtenir le cours fraîchement scanné
                 docs.sort((a, b) => {
-                    const tA = (a.timestamp && a.timestamp.seconds) ? a.timestamp.seconds : (new Date(a.date_creation || 0).getTime() / 1000);
-                    const tB = (b.timestamp && b.timestamp.seconds) ? b.timestamp.seconds : (new Date(b.date_creation || 0).getTime() / 1000);
+                    const tA = a.timestamp?.seconds || (a.date_creation ? new Date(a.date_creation).getTime() / 1000 : 0);
+                    const tB = b.timestamp?.seconds || (b.date_creation ? new Date(b.date_creation).getTime() / 1000 : 0);
                     return tB - tA;
                 });
-                ficheScanne = docs[0];
+                derniereFiche = docs[0];
+                console.log("✅ Cours sélectionné :", derniereFiche.titre);
             }
 
-            if (ficheScanne && ficheScanne.notions_cles && ficheScanne.notions_cles.length > 0) {
-                document.getElementById("notion-label").innerText = `Leçon : ${ficheScanne.titre || "Sciences"}`;
-                
-                // Crée autant de manches qu'il y a de notions analysées dans le cours (ex: 6 à 10 notions)
-                manchesActives = ficheScanne.notions_cles.map(notion => ({
-                    notionBrute: notion,
+            const notions = derniereFiche?.notions_cles || derniereFiche?.notions || [];
+
+            if (notions.length > 0) {
+                document.getElementById("notion-label").innerText = `Leçon : ${derniereFiche.titre || "Géographie"}`;
+                manchesActives = notions.map(n => ({
+                    notionBrute: n,
                     donneesManche: null
                 }));
                 TOTAL_MANCHES = manchesActives.length;
             } else {
-                // Repli si Firestore est vide
-                manchesActives = [
-                    {
-                        notionBrute: { terme: "Cellule animale", definition: "Unité biologique fondamentale protégée par une membrane plasmique.", terme_recherche_visuelle: "animal cell" },
-                        donneesManche: null
-                    },
-                    {
-                        notionBrute: { terme: "Microscope optique", definition: "Appareil muni d'objectifs permettant d'agrandir l'image d'un échantillon.", terme_recherche_visuelle: "optical microscope" },
-                        donneesManche: null
-                    }
-                ];
-                TOTAL_MANCHES = manchesActives.length;
+                console.warn("⚠️ Aucune notion clé extraite.");
+                document.getElementById("lesson-content").innerHTML = "<p>Aucune fiche trouvée. Scanne d'abord une leçon au QG !</p>";
+                return;
             }
 
             await afficherManche(mancheActuelle);
 
         } catch (err) {
-            console.error("Erreur Firestore :", err);
-            document.getElementById("lesson-content").innerHTML = `<p style="color:#ff8598">Erreur de lecture Firestore : ${err.message}</p>`;
+            console.error("❌ Erreur au démarrage du jeu :", err);
+            document.getElementById("lesson-content").innerHTML = `<p style="color:#ff8598">Erreur : ${err.message}</p>`;
         }
     }
 
@@ -422,12 +427,15 @@ button.btn-action:hover {
         const item = manchesActives[index - 1];
 
         if (!item.donneesManche) {
-            document.getElementById("schema-display").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Récupération du visuel...</p>`;
-            document.getElementById("lesson-content").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Préparation du défi...</p>`;
+            document.getElementById("schema-display").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Recherche de l'illustration...</p>`;
+            document.getElementById("lesson-content").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Préparation de la manche...</p>`;
 
             const notion = item.notionBrute;
-            const motCle = notion.terme_recherche_visuelle || notion.terme;
-            const imgUrl = await ImageService.trouverImage(motCle);
+            // On privilégie le terme français pour l'article encyclopédique
+            const recherche = notion.terme || notion.terme_recherche_visuelle;
+            console.log(`🔍 Recherche de visuel pour : "${recherche}"`);
+            
+            const imgUrl = await ImageService.trouverImage(recherche);
             item.donneesManche = transformerNotionEnManche(notion, imgUrl);
         }
 
@@ -468,7 +476,7 @@ button.btn-action:hover {
 
     window.passerTexteSuivant = async function() {
         if (erreursTrouvees < ERREURS_PAR_MANCHE) {
-            alert(`Il reste encore ${ERREURS_PAR_MANCHE - erreursTrouvees} anomalie(s) à démasquer !`);
+            alert(`Il reste encore ${ERREURS_PAR_MANCHE - erreursTrouvees} anomalie(s) à repérer !`);
             return;
         }
 
