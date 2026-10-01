@@ -334,21 +334,37 @@ button.btn-action:hover {
     ];
 
     function transformerNotionEnManche(notion, imageUrl) {
-        const def = notion.definition || "Description de la notion.";
+        // Extraction robuste du titre pour éviter "undefined"
+        const nomNotion = notion.terme || notion.nom || notion.titre || notion.concept || "Point clé";
+        const def = notion.definition || notion.explication || notion.description || "Description de la notion.";
         const mots = def.split(" ");
         
         let candidats = [];
         mots.forEach((m, idx) => {
             const nettoye = m.replace(/[.,;:!?()]/g, "");
             if (nettoye.length >= 5) {
-                candidats.push({ index: idx, mot: nettoye });
+                candidats.push(idx);
             }
         });
 
+        // Sélectionne 2 indices non consécutifs pour éviter "inactif impossible"
         const indexErreurs = [];
-        while (candidats.length > 0 && indexErreurs.length < 2) {
+        let essais = 0;
+        while (candidats.length > 0 && indexErreurs.length < 2 && essais < 20) {
+            essais++;
             const r = Math.floor(Math.random() * candidats.length);
-            indexErreurs.push(candidats.splice(r, 1)[0].index);
+            const indexChoisi = candidats[r];
+            
+            const estVoisin = indexErreurs.some(idx => Math.abs(idx - indexChoisi) <= 1);
+            if (!estVoisin) {
+                indexErreurs.push(indexChoisi);
+                candidats.splice(r, 1);
+            }
+        }
+
+        // Si la phrase est trop courte pour espacer 2 erreurs, on prend ce qui reste
+        if (indexErreurs.length < 2 && candidats.length > 0) {
+            indexErreurs.push(candidats.pop());
         }
 
         const motsTransformes = mots.map((mot, idx) => {
@@ -357,7 +373,7 @@ button.btn-action:hover {
                 const intrus = MOTS_INTRUS[Math.floor(Math.random() * MOTS_INTRUS.length)] + ponctuation;
                 return `<span class="word-click" onclick="clickWord(this, true)">${intrus}</span>`;
             } else {
-                if (mot.length > 6 && Math.random() > 0.5) {
+                if (mot.length > 6 && Math.random() > 0.55) {
                     return `<span class="word-click" onclick="clickWord(this, false)">${mot}</span>`;
                 }
                 return mot;
@@ -365,13 +381,13 @@ button.btn-action:hover {
         });
 
         const baliseImage = imageUrl 
-            ? `<img src="${imageUrl}" class="schema-img" alt="${notion.terme}">`
-            : `<div style="padding:20px; font-weight:bold; color:#7fe7ff; font-size:18px;">🌍 ${notion.terme}</div>`;
+            ? `<img src="${imageUrl}" class="schema-img" alt="${nomNotion}">`
+            : `<div style="padding:20px; font-weight:bold; color:#7fe7ff; font-size:18px;">🌍 ${nomNotion}</div>`;
 
         return {
-            titre: notion.terme,
+            titre: nomNotion,
             schema: baliseImage,
-            texte: `<strong>${notion.terme} :</strong> ${motsTransformes.join(" ")}`,
+            texte: `<strong>${nomNotion} :</strong> ${motsTransformes.join(" ")}`,
             nbErreurs: indexErreurs.length
         };
     }
@@ -385,7 +401,6 @@ button.btn-action:hover {
             let derniereFiche = null;
             if (!snap.empty) {
                 const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                // Classement pour obtenir le cours fraîchement scanné
                 docs.sort((a, b) => {
                     const tA = a.timestamp?.seconds || (a.date_creation ? new Date(a.date_creation).getTime() / 1000 : 0);
                     const tB = b.timestamp?.seconds || (b.date_creation ? new Date(b.date_creation).getTime() / 1000 : 0);
@@ -431,8 +446,7 @@ button.btn-action:hover {
             document.getElementById("lesson-content").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Préparation de la manche...</p>`;
 
             const notion = item.notionBrute;
-            // On privilégie le terme français pour l'article encyclopédique
-            const recherche = notion.terme || notion.terme_recherche_visuelle;
+            const recherche = notion.terme || notion.nom || notion.titre || notion.terme_recherche_visuelle;
             console.log(`🔍 Recherche de visuel pour : "${recherche}"`);
             
             const imgUrl = await ImageService.trouverImage(recherche);
