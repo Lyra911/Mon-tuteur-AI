@@ -122,10 +122,16 @@ body {
 .status-bar {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 13px;
     font-weight: 700;
     color: #f1f5f9;
     margin-bottom: 8px;
+}
+
+.notion-titre {
+    color: #7fe7ff;
+    font-size: 14px;
 }
 
 .progress {
@@ -154,13 +160,21 @@ body {
     justify-content: center;
     align-items: center;
     margin-bottom: 14px;
-    min-height: 160px;
+    min-height: 180px;
     box-sizing: border-box;
 }
 
 .schema-svg {
     max-width: 100%;
     height: 150px;
+}
+
+.schema-img {
+    max-width: 100%;
+    max-height: 170px;
+    border-radius: 12px;
+    object-fit: contain;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 .book-area {
@@ -251,25 +265,27 @@ button.btn-action:hover {
             <img class="nox" id="nox-img" src="images/Nox.png" alt="Nox">
         </div>
         <h1>Chasse aux erreurs</h1>
-        <p>Observe le schéma et trouve les 2 erreurs cachées dans l'explication !</p>
+        <p>Observe le document et trouve les erreurs cachées dans l'explication !</p>
     </div>
 
     <div class="card">
         <div class="status-bar">
-            <span>Erreurs trouvées :</span>
-            <span><span id="count">0</span> / 2</span>
+            <span class="notion-titre" id="notion-label">Chargement...</span>
+            <span><span id="count">0</span> / <span id="total-errors">2</span></span>
         </div>
 
         <div class="progress">
             <div id="bar" class="progress-fill"></div>
         </div>
 
-        <!-- Schéma visuel adapté automatiquement à la matière -->
-        <div class="schema-container" id="schema-display"></div>
+        <!-- Schéma ou image récupérée automatiquement -->
+        <div class="schema-container" id="schema-display">
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Recherche des illustrations...</p>
+        </div>
 
-        <!-- Texte de cours naturel sans mention du document -->
+        <!-- Texte interactif -->
         <div class="book-area" id="lesson-content">
-            <p><i class="fa-solid fa-spinner fa-spin"></i> Analyse de la leçon en cours...</p>
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Préparation des défis en cours...</p>
         </div>
 
         <button class="btn-action" id="btn-suite" onclick="passerTexteSuivant()">
@@ -278,7 +294,7 @@ button.btn-action:hover {
 
         <div id="reward" class="reward">
             ⭐ Félicitations Coco !<br>
-            Tu as démasqué toutes les anomalies des 10 textes (+50 XP pour Nox) !
+            Tu as démasqué toutes les anomalies avec succès (+50 XP pour Nox) !
         </div>
     </div>
 
@@ -287,16 +303,17 @@ button.btn-action:hover {
 <script type="module">
     import { db } from "./firebase.js";
     import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { ImageService } from "./services/imageService.js";
 
     const ELEVE_ID = "coco";
-    const TOTAL_MANCHES = 10;
-    const ERREURS_PAR_MANCHE = 2;
+    let TOTAL_MANCHES = 10;
+    let ERREURS_PAR_MANCHE = 2;
 
     let mancheActuelle = 1;
     let erreursTrouvees = 0;
     let manchesActives = [];
 
-    // Banques de 10 manches pour chaque domaine principal
+    // Banques de secours statiques
     const BANQUES = {
         bio: [
             {
@@ -310,137 +327,115 @@ button.btn-action:hover {
             {
                 schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="58" fill="#102027" stroke="#00e676" stroke-width="4" stroke-dasharray="6,4"/><text x="160" y="22" fill="#69f0ae" font-size="10" text-anchor="middle" font-weight="bold">Membrane plasmique</text></svg>`,
                 texte: `La <span class="word-click" onclick="clickWord(this, false)">membrane plasmique</span> isole la cellule tout en régulant ses flux de nutriments. Cette enveloppe protectrice est <span class="word-click" onclick="clickWord(this, true)">imperméable et faite d'écorce d'arbre</span>. Lors de la filtration, elle <span class="word-click" onclick="clickWord(this, true)">retient tous les déchets toxiques à l'intérieur</span> pour alimenter le noyau.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><ellipse cx="160" cy="80" rx="130" ry="55" fill="rgba(33, 150, 243, 0.15)" stroke="#29b6f6" stroke-width="2"/><text x="160" y="24" fill="#b3e5fc" font-size="10" text-anchor="middle" font-weight="bold">Le cytoplasme cellulaire</text></svg>`,
-                texte: `Le <span class="word-click" onclick="clickWord(this, false)">cytoplasme</span> forme la gelée fluide dans laquelle reposent tous les organites. Ce milieu interne est en réalité <span class="word-click" onclick="clickWord(this, true)">rempli de ciment solide figé</span>. Son rôle premier consiste à <span class="word-click" onclick="clickWord(this, true)">brûler la cellule pour réchauffer le corps</span> durant la nuit.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><rect x="60" y="30" width="200" height="100" rx="8" fill="#1b5e20" stroke="#aed581" stroke-width="6"/><text x="160" y="22" fill="#c5e1a5" font-size="10" text-anchor="middle" font-weight="bold">Paroi cellulosique végétale</text></svg>`,
-                texte: `Les cellules des plantes possèdent une <span class="word-click" onclick="clickWord(this, false)">paroi cellulosique</span> rigide assurant leur tenue verticale. Cette structure extérieure est <span class="word-click" onclick="clickWord(this, true)">présente dans les globules rouges humains</span>. De plus, son action <span class="word-click" onclick="clickWord(this, true)">rend la plante liquide dès qu'il fait chaud</span> pour irriguer les tiges.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><ellipse cx="160" cy="80" rx="80" ry="45" fill="#2e7d32" stroke="#76ff03" stroke-width="2"/><text x="160" y="25" fill="#ccff90" font-size="10" text-anchor="middle" font-weight="bold">Chloroplaste & Photosynthèse</text></svg>`,
-                texte: `La teinte verte des végétaux provient des <span class="word-click" onclick="clickWord(this, false)">chloroplastes</span> contenant la chlorophylle. Dans les feuilles, ces capteurs sont <span class="word-click" onclick="clickWord(this, true)">responsables de la digestion des os</span>. En absorbant les rayons du soleil, ils permettent de <span class="word-click" onclick="clickWord(this, true)">fabriquer du plastique sous terre</span> en continu.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><rect x="60" y="70" width="200" height="30" fill="rgba(255,255,255,0.2)" stroke="#eceff1" stroke-width="2"/><circle cx="160" cy="85" r="8" fill="#4fc3f7"/><text x="160" y="125" fill="#cfd8dc" font-size="9" text-anchor="middle" font-weight="bold">Préparation (Lame & Lamelle)</text></svg>`,
-                texte: `Pour examiner un tissu au microscope, on le place dans une gouttelette entre <span class="word-click" onclick="clickWord(this, false)">la lame et la lamelle</span>. Afin d'obtenir une observation nette, il convient d'<span class="word-click" onclick="clickWord(this, true)">emprisonner de grosses bulles d'air géantes</span>. On finalise l'installation en prenant soin de <span class="word-click" onclick="clickWord(this, true)">peindre la lamelle avec de l'encre noire opaque</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><rect x="50" y="40" width="220" height="80" rx="10" fill="#212121" stroke="#ffd54f" stroke-width="2"/><text x="160" y="70" fill="#fff59d" font-size="16" text-anchor="middle" font-weight="bold">Oculaire 10x × Objectif 40x = 400x</text></svg>`,
-                texte: `Le <span class="word-click" onclick="clickWord(this, false)">grossissement total</span> d'une préparation combine la force de grossissement de l'oculaire et de l'objectif. La formule requise s'obtient en <span class="word-click" onclick="clickWord(this, true)">divisant les valeurs par zéro</span>. Ce réglage précis a pour effet de rendre l'échantillon <span class="word-click" onclick="clickWord(this, true)">absolument invisible à l'écran</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><ellipse cx="160" cy="80" rx="65" ry="35" fill="#0288d1" stroke="#81d4fa" stroke-width="2"/><text x="160" y="84" fill="#ffffff" font-size="10" text-anchor="middle" font-weight="bold">Vacuole d'eau végétale</text></svg>`,
-                texte: `La <span class="word-click" onclick="clickWord(this, false)">vacuole</span> emmagasine l'eau et assure le maintien turgescent des cellules végétales. Cette vaste poche interne demeure <span class="word-click" onclick="clickWord(this, true)">remplie d'essence de voiture inflammable</span>. Par ailleurs, elle <span class="word-click" onclick="clickWord(this, true)">sert à propulser la feuille dans les airs</span> dès l'apparition des fleurs.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><path d="M 100,80 C 100,50 140,40 180,45 C 220,50 230,80 210,110 C 190,125 120,120 100,80 Z" fill="#00695c" stroke="#64ffda" stroke-width="2"/><text x="160" y="22" fill="#64ffda" font-size="10" text-anchor="middle" font-weight="bold">Organisme unicellulaire</text></svg>`,
-                texte: `Les organismes <span class="word-click" onclick="clickWord(this, false)">unicellulaires</span> effectuent toutes leurs fonctions vitales au sein d'une unique cellule autonome. Pour se protéger du milieu, ces êtres microscopiques <span class="word-click" onclick="clickWord(this, true)">possèdent un squelette composé d'acier</span>. Enfin, ils sont connus pour être <span class="word-click" onclick="clickWord(this, true)">capables de vivre uniquement sur le soleil</span> sans eau.`
             }
         ],
         geo: [
             {
                 schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="55" fill="#0b1e36" stroke="#00f2fe" stroke-width="2"/><line x1="105" y1="80" x2="215" y2="80" stroke="#ff5858" stroke-width="3"/><text x="160" y="75" fill="#ff5858" font-size="9" text-anchor="middle" font-weight="bold">Équateur (0°)</text></svg>`,
                 texte: `Sur le globe terrestre, <span class="word-click" onclick="clickWord(this, false)">l'équateur</span> partage la planète en deux hémisphères. Cette ligne de référence fondamentale forme en réalité un tracé <span class="word-click" onclick="clickWord(this, true)">parfaitement vertical reliant les pôles</span>. Sa position centrale lui confère une latitude de <span class="word-click" onclick="clickWord(this, true)">quatre-vingt-dix degrés Nord</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="55" fill="#0b1e36" stroke="#00f2fe" stroke-width="2"/><line x1="160" y1="25" x2="160" y2="135" stroke="#f6d365" stroke-width="3"/><text x="160" y="20" fill="#f6d365" font-size="9" text-anchor="middle">Méridien de Greenwich (0°)</text></svg>`,
-                texte: `Le <span class="word-click" onclick="clickWord(this, false)">méridien de Greenwich</span> sert de repère zéro pour mesurer la longitude à l'Est et à l'Ouest. Ce demi-cercle imaginaire passe très exactement au centre de la ville de <span class="word-click" onclick="clickWord(this, true)">Tokyo</span>. En cartographie, il est également <span class="word-click" onclick="clickWord(this, true)">tracé parallèlement à la ligne de l'équateur</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="55" fill="#0b1e36" stroke="#00f2fe"/><ellipse cx="160" cy="55" rx="46" ry="6" fill="none" stroke="#a18cd1" stroke-width="2"/><ellipse cx="160" cy="105" rx="46" ry="6" fill="none" stroke="#a18cd1" stroke-width="2"/><text x="160" y="20" fill="#a18cd1" font-size="10" text-anchor="middle">Les parallèles</text></svg>`,
-                texte: `Les cercles imaginaires horizontaux dessinés parallèlement à l'équateur sont les <span class="word-click" onclick="clickWord(this, false)">parallèles</span>. Lorsqu'on s'approche des extrémités du globe, ces lignes <span class="word-click" onclick="clickWord(this, true)">se croisent toutes aux deux pôles</span>. Leur tracé permet d'indiquer <span class="word-click" onclick="clickWord(this, true)">exclusivement la longitude Est</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="55" fill="#0b1e36" stroke="#00f2fe"/><ellipse cx="160" cy="80" rx="25" ry="55" fill="none" stroke="#fda085" stroke-width="2"/><text x="160" y="20" fill="#fda085" font-size="10" text-anchor="middle">Les méridiens</text></svg>`,
-                texte: `Les demi-cercles verticaux joignant le pôle Nord au pôle Sud sont les <span class="word-click" onclick="clickWord(this, false)">méridiens</span>. Sur un planisphère mondial, ces axes présentent des longueurs <span class="word-click" onclick="clickWord(this, true)">complètement inégales entre elles</span>. Ils parcourent la surface du globe d'une façon <span class="word-click" onclick="clickWord(this, true)">strictement horizontale</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><rect x="70" y="30" width="180" height="100" fill="#0b1e36" stroke="#00f2fe" rx="8"/><circle cx="190" cy="65" r="4" fill="#6cff95"/><text x="190" y="60" fill="#6cff95" font-size="9">Point (Lat/Long)</text></svg>`,
-                texte: `Pour situer précisément une ville sur un planisphère, on mesure sa <span class="word-click" onclick="clickWord(this, false)">latitude</span> par rapport à l'équateur. Cette grandeur angulaire s'exprime en <span class="word-click" onclick="clickWord(this, true)">kilomètres cubes de terrain</span>. Elle peut par ailleurs atteindre une valeur maximale de <span class="word-click" onclick="clickWord(this, true)">trois cent soixante degrés</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="50" fill="#0b1e36" stroke="#00f2fe"/><path d="M 160,30 A 50,50 0 0,1 210,80 L 160,80 Z" fill="rgba(0, 242, 254, 0.3)"/><text x="160" y="20" fill="#7fe7ff" font-size="9" text-anchor="middle">Cadran Nord-Est</text></svg>`,
-                texte: `La position Est-Ouest d'un point géographique est désignée par sa <span class="word-click" onclick="clickWord(this, false)">longitude</span>. La valeur de la longitude varie selon son <span class="word-click" onclick="clickWord(this, true)">altitude au-dessus des nuages</span>. Son origine correspond à la ligne passant par le méridien <span class="word-click" onclick="clickWord(this, true)">de l'Équateur céleste</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><path d="M 105,80 A 55,55 0 0,1 215,80 Z" fill="#1e293b" stroke="#7fe7ff" stroke-width="2"/><text x="160" y="60" fill="#7fe7ff" font-size="10" text-anchor="middle" font-weight="bold">Hémisphère Nord</text></svg>`,
-                texte: `La moitié boréale du globe située au-dessus de la ligne médiane correspond à <span class="word-click" onclick="clickWord(this, false)">l'hémisphère Nord</span>. Cette vaste région abrite <span class="word-click" onclick="clickWord(this, true)">le continent Antarctique et ses manchots</span>. Elle occupe à elle seule <span class="word-click" onclick="clickWord(this, true)">les trois quarts de la surface terrestre</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><path d="M 105,80 A 55,55 0 0,0 215,80 Z" fill="#1e293b" stroke="#fda085" stroke-width="2"/><text x="160" y="110" fill="#fda085" font-size="10" text-anchor="middle" font-weight="bold">Hémisphère Sud</text></svg>`,
-                texte: `La calotte australe s'étendant sous l'équateur compose <span class="word-click" onclick="clickWord(this, false)">l'hémisphère Sud</span>. Le pôle Sud géographique y culmine à une latitude de <span class="word-click" onclick="clickWord(this, true)">zéro degré sur la carte</span>. Côté relief marin, cette moitié du globe <span class="word-click" onclick="clickWord(this, true)">ne possède aucun océan naturel</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><line x1="80" y1="80" x2="240" y2="80" stroke="#ffffff" stroke-width="3"/><text x="160" y="110" fill="#ffffff" font-size="10" text-anchor="middle">Échelle graphique (0 à 100 km)</text></svg>`,
-                texte: `Pour traduire les distances mesurées sur le papier en kilomètres réels, on utilise <span class="word-click" onclick="clickWord(this, false)">l'échelle cartographique</span>. Cet instrument a pour but d'évaluer <span class="word-click" onclick="clickWord(this, true)">le poids des collines en tonnes</span>. Une petite échelle a pour particularité d'agrandir le territoire de <span class="word-click" onclick="clickWord(this, true)">dix mille fois sa taille</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="45" fill="none" stroke="#94a3b8" stroke-dasharray="2"/><polygon points="160,35 165,80 160,75 155,80" fill="#ff5858"/><text x="160" y="30" fill="#ff5858" font-size="10" text-anchor="middle" font-weight="bold">N</text></svg>`,
-                texte: `Le symbole d'orientation gravé sur les cartes maritimes est <span class="word-click" onclick="clickWord(this, false)">la rose des vents</span>. Sur un document cartographique orienté, la pointe de l'Est regarde <span class="word-click" onclick="clickWord(this, true)">vers la gauche de la page</span>. De plus, son aiguille bicolore pointe toujours vers <span class="word-click" onclick="clickWord(this, true)">l'ouest géographique</span>.`
-            }
-        ],
-        general: [
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><rect x="80" y="25" width="160" height="110" rx="10" fill="#0b1e36" stroke="#7fe7ff" stroke-width="2"/><line x1="100" y1="50" x2="220" y2="50" stroke="#ffffff" stroke-width="2"/><line x1="100" y1="75" x2="200" y2="75" stroke="#ffffff" stroke-width="2"/><text x="160" y="115" fill="#7fe7ff" font-size="10" text-anchor="middle" font-weight="bold">Méthode de travail & synthèse</text></svg>`,
-                texte: `L'apprentissage méthodique repose sur <span class="word-click" onclick="clickWord(this, false)">la mémorisation active</span> des notions essentielles. Cette technique permet de retenir des informations <span class="word-click" onclick="clickWord(this, true)">en dormant sans jamais réviser</span>. Une synthèse bien construite a également pour propriété d'<span class="word-click" onclick="clickWord(this, true)">effacer tous les souvenirs antérieurs</span>.`
-            },
-            {
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><circle cx="160" cy="80" r="45" fill="#1b2a4a" stroke="#ffd54f" stroke-width="2"/><text x="160" y="85" fill="#ffd54f" font-size="12" text-anchor="middle" font-weight="bold">Analyse logique</text></svg>`,
-                texte: `Face à un problème complexe, <span class="word-click" onclick="clickWord(this, false)">le raisonnement critique</span> permet de décomposer chaque étape avec clarté. Cette approche requiert d'<span class="word-click" onclick="clickWord(this, true)">ignorer totalement les données de départ</span>. La solution validée doit par ailleurs demeurer <span class="word-click" onclick="clickWord(this, true)">strictement secrète et inutile</span>.`
             }
         ]
     };
+
+    /**
+     * Génère une manche interactive à partir d'une notion analysée par Gemini
+     */
+    function transformerNotionEnManche(notion, imageUrl) {
+        const def = notion.definition || "";
+        const mots = def.split(" ");
+        
+        let candidats = [];
+        mots.forEach((m, idx) => {
+            if (m.length > 4 && !m.includes("<") && !m.includes(">")) {
+                candidats.push(idx);
+            }
+        });
+
+        // Injecte 2 erreurs absurdes adaptées
+        const indexErreurs = [];
+        while (candidats.length > 0 && indexErreurs.length < 2) {
+            const randomIndex = Math.floor(Math.random() * candidats.length);
+            indexErreurs.push(candidats.splice(randomIndex, 1)[0]);
+        }
+
+        const fauxMots = ["inversé", "totalement impossible", "en plastique mou", "invisible à l'œil nu", "qui brûle la nuit"];
+        const motsTransformes = mots.map((mot, idx) => {
+            if (indexErreurs.includes(idx)) {
+                const intrus = fauxMots[Math.floor(Math.random() * fauxMots.length)];
+                return `<span class="word-click" onclick="clickWord(this, true)">${intrus}</span>`;
+            } else {
+                // Rendre cliquable certains mots pour tester le discernement
+                if (mot.length > 5 && Math.random() > 0.6) {
+                    return `<span class="word-click" onclick="clickWord(this, false)">${mot}</span>`;
+                }
+                return mot;
+            }
+        });
+
+        return {
+            titre: notion.terme,
+            schema: `<img src="${imageUrl}" class="schema-img" alt="${notion.terme}">`,
+            texte: `<strong>${notion.terme} :</strong> ${motsTransformes.join(" ")}`,
+            nbErreurs: indexErreurs.length
+        };
+    }
 
     async function initialiserJeu() {
         try {
             const q = query(
                 collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"),
-                orderBy("timestamp", "desc"),
+                orderBy("date_creation", "desc"),
                 limit(1)
             );
             const querySnapshot = await getDocs(q);
 
-            let titreCours = "";
+            let ficheScanne = null;
             if (!querySnapshot.empty) {
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.titre) titreCours = data.titre;
-                });
+                ficheScanne = querySnapshot.docs[0].data();
             }
 
-            // Sélectionne automatiquement la banque selon le titre scanné
-            const t = titreCours.toLowerCase();
-            if (t.includes("bio") || t.includes("cellul") || t.includes("microscop") || t.includes("corps")) {
-                manchesActives = BANQUES.bio;
-            } else if (t.includes("géo") || t.includes("carte") || t.includes("coordonné") || t.includes("hémisphèr")) {
-                manchesActives = BANQUES.geo;
+            // Si la fiche possède des notions analysées par l'IA
+            if (ficheScanne && ficheScanne.notions_cles && ficheScanne.notions_cles.length > 0) {
+                document.getElementById("notion-label").innerText = `Leçon : ${ficheScanne.titre || "Biologie"}`;
+                
+                // Récupération asynchrone des images
+                const promises = ficheScanne.notions_cles.map(async (notion) => {
+                    const motRecherche = notion.terme_recherche_visuelle || notion.terme;
+                    const imgUrl = await ImageService.trouverImage(motRecherche);
+                    return transformerNotionEnManche(notion, imgUrl);
+                });
+
+                manchesActives = await Promise.all(promises);
+                TOTAL_MANCHES = manchesActives.length;
             } else {
-                // Si la matière n'a que 2 fiches modèles, on la complète jusqu'à 10
-                manchesActives = BANQUES.general;
-                while (manchesActives.length < TOTAL_MANCHES) {
-                    manchesActives.push(BANQUES.general[manchesActives.length % BANQUES.general.length]);
-                }
+                // Secours statique selon le titre
+                manchesActives = BANQUES.bio;
+                TOTAL_MANCHES = manchesActives.length;
             }
 
             afficherManche(mancheActuelle);
 
         } catch (err) {
-            console.error("Firestore:", err);
+            console.error("Erreur de chargement Firestore / Images:", err);
             manchesActives = BANQUES.bio;
+            TOTAL_MANCHES = manchesActives.length;
             afficherManche(mancheActuelle);
         }
     }
 
     function afficherManche(index) {
         erreursTrouvees = 0;
+        const donnees = manchesActives[index - 1];
+        ERREURS_PAR_MANCHE = donnees.nbErreurs || 2;
+
         document.getElementById("count").innerText = "0";
+        document.getElementById("total-errors").innerText = ERREURS_PAR_MANCHE;
         document.getElementById("bar").style.width = "0%";
         document.getElementById("manche-text").innerText = `${index} / ${TOTAL_MANCHES}`;
+        if (donnees.titre) {
+            document.getElementById("notion-label").innerText = `Notion : ${donnees.titre}`;
+        }
 
-        const donnees = manchesActives[index - 1];
         document.getElementById("schema-display").innerHTML = donnees.schema;
         document.getElementById("lesson-content").innerHTML = donnees.texte;
     }
@@ -455,7 +450,7 @@ button.btn-action:hover {
             document.getElementById("count").innerText = erreursTrouvees;
             document.getElementById("bar").style.width = (erreursTrouvees / ERREURS_PAR_MANCHE) * 100 + "%";
 
-            if (erreursTrouvees === ERREURS_PAR_MANCHE) {
+            if (erreursTrouvees >= ERREURS_PAR_MANCHE) {
                 setTimeout(() => {
                     passerTexteSuivant();
                 }, 800);
@@ -470,7 +465,7 @@ button.btn-action:hover {
 
     window.passerTexteSuivant = function() {
         if (erreursTrouvees < ERREURS_PAR_MANCHE) {
-            alert(`Il reste encore ${ERREURS_PAR_MANCHE - erreursTrouvees} erreur(s) à démasquer sur ce schéma !`);
+            alert(`Il reste encore ${ERREURS_PAR_MANCHE - erreursTrouvees} anomalie(s) à démasquer !`);
             return;
         }
 
