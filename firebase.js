@@ -4,27 +4,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { OrchestrateurAI } from "./ai/orchestrateur.js";
 
-// 1. Initialisation Firebase
+// 1. Initialisation Firebase avec tes vrais identifiants
 const firebaseConfig = {
-  apiKey: "AIzaSyDummyKey",
-  authDomain: "mon-tuteur-ai.firebaseapp.com",
-  projectId: "mon-tuteur-ai",
-  storageBucket: "mon-tuteur-ai.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  apiKey: "AIzaSyD0GbueWsIm8kaUnB6sZYykYSZl11s2JTs",
+  authDomain: "tuteur-ai.firebaseapp.com",
+  projectId: "tuteur-ai",
+  storageBucket: "tuteur-ai.firebasestorage.app",
+  messagingSenderId: "1025983965857",
+  appId: "1:1025983965857:web:121d32b494c8433f9f1ee0"
 };
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// Élève par défaut pour le prototype
-const eleveActifId = "coco_01";
+// ID de l'élève correspondant exactement à ta collection Firestore
+const eleveActifId = "coco";
 
 // =========================================================================
-// UTILITAIRE : Extraction HD d'une photo ou d'un PDF multipage
+// UTILITAIRE : Extraction optimisée d'une photo ou d'un PDF multipage
 // =========================================================================
 async function convertirDocumentEnImagesHD(file, maxPages = 6) {
-  // CAS 1 : C'est une image (JPG, PNG, WEBP)
+  // CAS 1 : Fichier image (JPG, PNG, WEBP)
   if (file.type.startsWith("image/")) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -34,7 +34,7 @@ async function convertirDocumentEnImagesHD(file, maxPages = 6) {
     });
   }
 
-  // CAS 2 : C'est un PDF
+  // CAS 2 : Fichier PDF
   if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -50,7 +50,8 @@ async function convertirDocumentEnImagesHD(file, maxPages = 6) {
     for (let numPage = 1; numPage <= nbPagesATraiter; numPage++) {
       const page = await pdf.getPage(numPage);
       
-      const viewport = page.getViewport({ scale: 1.8 });
+      // Échelle 1.2 : compromis idéal entre lisibilité parfaite du texte et légèreté d'envoi
+      const viewport = page.getViewport({ scale: 1.2 });
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       
@@ -62,7 +63,8 @@ async function convertirDocumentEnImagesHD(file, maxPages = 6) {
         viewport: viewport
       }).promise;
 
-      const base64Page = canvas.toDataURL("image/jpeg", 0.85);
+      // Compression JPEG à 0.75 pour éviter les lenteurs et timeouts
+      const base64Page = canvas.toDataURL("image/jpeg", 0.75);
       pagesHD.push(base64Page);
 
       if (statusText) {
@@ -96,10 +98,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (imagePreview) imagePreview.style.display = "none";
 
     try {
-      // 1. Extraction des pages HD
+      // 1. Extraction des pages
       const pagesExtraites = await convertirDocumentEnImagesHD(file, 6);
 
-      // Aperçu de la première page
+      // Aperçu visuel de la première page
       if (imagePreview && pagesExtraites.length > 0) {
         imagePreview.src = pagesExtraites[0];
         imagePreview.style.display = "block";
@@ -109,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         analysisText.textContent = `Analyse par Nox de ${pagesExtraites.length} page(s) en cours... ⏳`;
       }
 
-      // 2. Envoi des pages à l'Agent Vision
+      // 2. Transmission à l'Orchestrateur IA
       const resultatFiche = await OrchestrateurAI.analyserFiche(
         eleveActifId,
         "",
@@ -131,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Écoute des erreurs de l'élève en direct (Agent 4 Ninja)
+  // Écoute en direct des erreurs de révision (Agent 4 Ninja)
   const ninjaList = document.getElementById("erreurs-list");
   const ninjaAlert = document.getElementById("ninja-alert");
 
