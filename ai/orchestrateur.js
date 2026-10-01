@@ -1,5 +1,5 @@
 // ============================================================================
-// ORCHESTRATEUR CLIENT (ai/orchestrateur.js) - DÉTECTION UNIVERSELLE D'IMAGES
+// ORCHESTRATEUR CLIENT (ai/orchestrateur.js) - ANTI-INVERSION D'ARGUMENTS
 // ============================================================================
 
 import { db } from "../firebase.js";
@@ -20,12 +20,24 @@ function fileVersBase64(fichier) {
 }
 
 export const OrchestrateurAI = {
-  async analyserFiche(donneesImages, eleveId = "coco") {
+  // Remplacement de l'entrée pour gérer les arguments inversés
+  async analyserFiche(arg1, arg2) {
+    let donneesImages = arg1;
+    let eleveId = arg2 || "coco";
+
+    // AUTO-CORRECTION : Si le 1er argument est une petite chaîne (ex: "coco"), 
+    // c'est que firebase.js a inversé l'élève et l'image !
+    if (typeof arg1 === "string" && arg1.length < 50) {
+      console.warn("⚠️ [Orchestrateur] Inversion d'arguments détectée et corrigée automatiquement !");
+      eleveId = arg1;
+      donneesImages = arg2; 
+    }
+
     return await this.traiterDocumentComplet(donneesImages, eleveId);
   },
 
   async traiterDocumentComplet(donneesImages, eleveId = "coco") {
-    console.log("🔍 [Orchestrateur] Type de données reçu :", typeof donneesImages, donneesImages);
+    console.log("🔍 [Orchestrateur] Type de données d'image traité :", typeof donneesImages, donneesImages);
 
     let elementsAExtraire = [];
 
@@ -45,7 +57,7 @@ export const OrchestrateurAI = {
     else if (Array.isArray(donneesImages)) {
       elementsAExtraire = donneesImages;
     }
-    // Cas 5 : Un seul élément direct (File, Blob, string ou objet)
+    // Cas 5 : Un seul élément direct (File, Blob, string longue ou objet)
     else if (donneesImages) {
       elementsAExtraire = [donneesImages];
     }
@@ -54,17 +66,14 @@ export const OrchestrateurAI = {
     const promesses = elementsAExtraire.map(async (item) => {
       if (!item) return "";
 
-      // Si c'est déjà un fichier / blob
       if (item instanceof File || item instanceof Blob) {
         return await fileVersBase64(item);
       }
 
-      // Si c'est une string directe
       if (typeof item === "string") {
         return item;
       }
 
-      // Si c'est un objet imbriqué
       if (typeof item === "object") {
         if (item.file instanceof File || item.file instanceof Blob) {
           return await fileVersBase64(item.file);
@@ -82,7 +91,7 @@ export const OrchestrateurAI = {
 
     if (imagesNettoyees.length === 0) {
       console.error("❌ Données brutes reçues non convertibles :", donneesImages);
-      throw new Error("Impossible d'extraire les données Base64 des images fournies.");
+      throw new Error("Impossible d'extraire les données Base64 de l'image. Vérifiez le fichier importé.");
     }
 
     // Envoi au relais Apps Script
