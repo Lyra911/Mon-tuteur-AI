@@ -1,5 +1,5 @@
 // ============================================================================
-// ORCHESTRATEUR CLIENT (ai/orchestrateur.js) - AVEC CONVERSION AUTOMATIQUE FILE -> BASE64
+// ORCHESTRATEUR CLIENT (ai/orchestrateur.js) - DÉTECTION UNIVERSELLE D'IMAGES
 // ============================================================================
 
 import { db } from "../firebase.js";
@@ -7,12 +7,14 @@ import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/fir
 
 const URL_RELAIS = "https://script.google.com/macros/s/AKfycbzbvHkVRVNowyy_98Dpv44WinuqK0FmQ88HO4Q-DvcWg45P4UhH9vzzw10jmraVEDzx/exec";
 
-// Fonction utilitaire pour convertir un File ou Blob en chaîne Base64
 function fileVersBase64(fichier) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    if (!fichier || !(fichier instanceof Blob || fichier instanceof File)) {
+      return resolve("");
+    }
     const lecteur = new FileReader();
-    lecteur.onload = () => resolve(lecteur.result);
-    lecteur.onerror = (err) => reject(err);
+    lecteur.onload = () => resolve(lecteur.result || "");
+    lecteur.onerror = () => resolve("");
     lecteur.readAsDataURL(fichier);
   });
 }
@@ -23,42 +25,63 @@ export const OrchestrateurAI = {
   },
 
   async traiterDocumentComplet(donneesImages, eleveId = "coco") {
-    let listeBrute = Array.isArray(donneesImages) ? donneesImages : [donneesImages];
+    console.log("🔍 [Orchestrateur] Type de données reçu :", typeof donneesImages, donneesImages);
 
-    // Si donneesImages est une FileList de l'élément <input type="file">
-    if (donneesImages instanceof FileList) {
-      listeBrute = Array.from(donneesImages);
+    let elementsAExtraire = [];
+
+    // Cas 1 : L'argument est un événement JS (ex: e.target.files)
+    if (donneesImages && donneesImages.target && donneesImages.target.files) {
+      elementsAExtraire = Array.from(donneesImages.target.files);
+    }
+    // Cas 2 : L'argument est directement l'élément <input type="file">
+    else if (donneesImages && donneesImages.files) {
+      elementsAExtraire = Array.from(donneesImages.files);
+    }
+    // Cas 3 : C'est une FileList
+    else if (donneesImages instanceof FileList) {
+      elementsAExtraire = Array.from(donneesImages);
+    }
+    // Cas 4 : C'est déjà un tableau
+    else if (Array.isArray(donneesImages)) {
+      elementsAExtraire = donneesImages;
+    }
+    // Cas 5 : Un seul élément direct (File, Blob, string ou objet)
+    else if (donneesImages) {
+      elementsAExtraire = [donneesImages];
     }
 
-    // Conversion de chaque élément reçu (qu'il s'agisse d'un File, Blob, texte Base64 ou objet)
-    const promessesBase64 = listeBrute.map(async (item) => {
+    // Traitement et conversion asynchrone
+    const promesses = elementsAExtraire.map(async (item) => {
       if (!item) return "";
 
-      // Cas 1 : C'est déjà un File ou un Blob brut
+      // Si c'est déjà un fichier / blob
       if (item instanceof File || item instanceof Blob) {
         return await fileVersBase64(item);
       }
 
-      // Cas 2 : C'est un objet qui contient un File
-      if (typeof item === "object" && (item.file instanceof File || item.file instanceof Blob)) {
-        return await fileVersBase64(item.file);
-      }
-
-      // Cas 3 : C'est déjà une chaîne Base64
+      // Si c'est une string directe
       if (typeof item === "string") {
         return item;
       }
 
-      // Cas 4 : Objet avec une propriété contenant le Base64
-      return item.base64 || item.data || item.image || item.src || "";
+      // Si c'est un objet imbriqué
+      if (typeof item === "object") {
+        if (item.file instanceof File || item.file instanceof Blob) {
+          return await fileVersBase64(item.file);
+        }
+        return item.base64 || item.data || item.image || item.src || item.url || "";
+      }
+
+      return "";
     });
 
-    const resultats = await Promise.all(promessesBase64);
+    const resultats = await Promise.all(promesses);
     const imagesNettoyees = resultats.filter(str => typeof str === "string" && str.length > 50);
 
     console.log(`🚀 [Orchestrateur] Envoi de ${imagesNettoyees.length} image(s) valide(s) aux agents...`);
 
     if (imagesNettoyees.length === 0) {
+      console.error("❌ Données brutes reçues non convertibles :", donneesImages);
       throw new Error("Impossible d'extraire les données Base64 des images fournies.");
     }
 
