@@ -155,26 +155,24 @@ body {
     background: radial-gradient(circle at center, #0f1c3f 0%, #070b1a 100%);
     border-radius: 16px;
     border: 1px solid rgba(127, 231, 255, 0.25);
-    padding: 12px;
+    padding: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 14px;
-    min-height: 175px;
+    min-height: 200px;
+    max-height: 250px;
     box-sizing: border-box;
-}
-
-.schema-svg {
-    max-width: 100%;
-    height: 150px;
+    overflow: hidden;
 }
 
 .schema-img {
     max-width: 100%;
-    max-height: 165px;
+    max-height: 220px;
     border-radius: 12px;
-    object-fit: contain;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    object-fit: cover;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(127, 231, 255, 0.4);
 }
 
 .book-area {
@@ -191,13 +189,15 @@ body {
 .word-click {
     cursor: pointer;
     border-radius: 4px;
-    padding: 1px 4px;
+    padding: 2px 6px;
+    margin: 0 1px;
     transition: background 0.15s ease, color 0.15s ease;
     user-select: none;
+    font-weight: 500;
 }
 
 .word-click:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .word-click.correct-error {
@@ -256,25 +256,24 @@ button.btn-action:hover {
             <i class="fa-solid fa-arrow-left"></i> Retour au QG
         </a>
         <div class="badge-manche">
-            <i class="fa-solid fa-flag-checkered"></i> Manche : <span id="manche-text">1 / 10</span>
+            <i class="fa-solid fa-flag-checkered"></i> Manche : <span id="manche-text">1 / 1</span>
         </div>
     </div>
 
     <div class="header">
         <div class="nox-container">
-            <!-- Chemins en cascade pour Nox : ../images puis /images/ puis fallback SVG interactif -->
             <img class="nox" id="nox-img" 
                  src="../images/Nox.png" 
                  onerror="if (!this.dataset.secondTry) { this.dataset.secondTry = true; this.src = '/Mon-tuteur-AI/images/Nox.png'; } else { this.onerror = null; this.src = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%2300f2fe\'/><circle cx=\'35\' cy=\'40\' r=\'8\' fill=\'%23070b19\'/><circle cx=\'65\' cy=\'40\' r=\'8\' fill=\'%23070b19\'/><path d=\'M 35 65 Q 50 80 65 65\' stroke=\'%23070b19\' stroke-width=\'5\' fill=\'none\' stroke-linecap=\'round\'/></svg>'; }" 
                  alt="Nox">
         </div>
         <h1>Chasse aux erreurs</h1>
-        <p>Observe le document et trouve les erreurs cachées dans l'explication !</p>
+        <p>Observe l'image et démasque les 2 anomalies glissées dans la leçon !</p>
     </div>
 
     <div class="card">
         <div class="status-bar">
-            <span class="notion-titre" id="notion-label">Chargement...</span>
+            <span class="notion-titre" id="notion-label">Chargement de la fiche...</span>
             <span><span id="count">0</span> / <span id="total-errors">2</span></span>
         </div>
 
@@ -283,11 +282,11 @@ button.btn-action:hover {
         </div>
 
         <div class="schema-container" id="schema-display">
-            <p><i class="fa-solid fa-spinner fa-spin"></i> Initialisation...</p>
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Récupération du visuel...</p>
         </div>
 
         <div class="book-area" id="lesson-content">
-            <p><i class="fa-solid fa-spinner fa-spin"></i> Préparation de l'activité...</p>
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Préparation des questions...</p>
         </div>
 
         <button class="btn-action" id="btn-suite" onclick="passerTexteSuivant()">
@@ -304,39 +303,37 @@ button.btn-action:hover {
 
 <script type="module">
     import { db } from "../firebase.js";
-    import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import { ImageService } from "../services/imageService.js";
 
     const ELEVE_ID = "coco";
-    let TOTAL_MANCHES = 10;
+    let TOTAL_MANCHES = 1;
     let ERREURS_PAR_MANCHE = 2;
 
     let mancheActuelle = 1;
     let erreursTrouvees = 0;
     let manchesActives = [];
 
-    const BANQUES = {
-        bio: [
-            {
-                titre: "Noyau cellulaire",
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><ellipse cx="160" cy="80" rx="120" ry="60" fill="#0b1e36" stroke="#00f2fe" stroke-width="3"/><circle cx="140" cy="80" r="28" fill="#311b92" stroke="#e040fb" stroke-width="2"/><text x="140" y="84" fill="#ffffff" font-size="9" text-anchor="middle" font-weight="bold">Noyau (ADN)</text><text x="160" y="24" fill="#80deea" font-size="10" text-anchor="middle" font-weight="bold">Cellule animale</text></svg>`,
-                texte: `La cellule est la structure de base du vivant. Elle renferme en son centre <span class="word-click" onclick="clickWord(this, false)">le noyau</span>. Chez les animaux, ces cellules sont <span class="word-click" onclick="clickWord(this, true)">visibles à l'œil nu sans loupe</span>. De plus, le noyau est <span class="word-click" onclick="clickWord(this, true)">rempli de gaz carbonique solide</span> pour assurer les échanges.`
-            },
-            {
-                titre: "Microscope optique",
-                schema: `<svg viewBox="0 0 320 160" class="schema-svg"><rect x="70" y="130" width="180" height="15" rx="4" fill="#37474f"/><path d="M 210,130 Q 230,70 170,45" fill="none" stroke="#78909c" stroke-width="10" stroke-linecap="round"/><rect x="125" y="15" width="22" height="30" fill="#00bcd4"/><text x="160" y="155" fill="#cfd8dc" font-size="9" text-anchor="middle" font-weight="bold">Microscope optique</text></svg>`,
-                texte: `Le microscope optique permet d'observer l'infiniment petit grâce à <span class="word-click" onclick="clickWord(this, false)">l'oculaire</span>. On fait la mise au point en <span class="word-click" onclick="clickWord(this, true)">frappant sur la lame de verre</span>. La lentille sert aussi à <span class="word-click" onclick="clickWord(this, true)">projeter un son aigu dans l'oreille</span> pour guider le regard.`
-            }
-        ]
-    };
+    // Intrus pédagogiques naturels pour la chasse
+    const FAUX_MOTS = [
+        "fait d'acier", 
+        "totalement invisible", 
+        "en plastique transparent", 
+        "brûlé par le soleil", 
+        "rempli d'essence", 
+        "solide comme du ciment", 
+        "inversé", 
+        "peint en noir opaque"
+    ];
 
     function transformerNotionEnManche(notion, imageUrl) {
-        const def = notion.definition || "";
+        const def = notion.definition || "Définition de la notion.";
         const mots = def.split(" ");
         
         let candidats = [];
         mots.forEach((m, idx) => {
-            if (m.length > 4 && !m.includes("<") && !m.includes(">")) {
+            // Repère les mots substantiels à remplacer
+            if (m.length >= 5 && !m.includes("<") && !m.includes(">")) {
                 candidats.push(idx);
             }
         });
@@ -347,13 +344,12 @@ button.btn-action:hover {
             indexErreurs.push(candidats.splice(randomIndex, 1)[0]);
         }
 
-        const fauxMots = ["inversé", "impossible", "en plastique", "invisible", "qui s'évapore la nuit"];
         const motsTransformes = mots.map((mot, idx) => {
             if (indexErreurs.includes(idx)) {
-                const intrus = fauxMots[Math.floor(Math.random() * fauxMots.length)];
+                const intrus = FAUX_MOTS[Math.floor(Math.random() * FAUX_MOTS.length)];
                 return `<span class="word-click" onclick="clickWord(this, true)">${intrus}</span>`;
             } else {
-                if (mot.length > 5 && Math.random() > 0.65) {
+                if (mot.length > 5 && Math.random() > 0.55) {
                     return `<span class="word-click" onclick="clickWord(this, false)">${mot}</span>`;
                 }
                 return mot;
@@ -370,39 +366,50 @@ button.btn-action:hover {
 
     async function initialiserJeu() {
         try {
-            const q = query(
-                collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"),
-                orderBy("date_creation", "desc"),
-                limit(1)
-            );
-            const querySnapshot = await getDocs(q);
+            // Lecture directe de toutes les fiches de coco pour prendre la plus récente
+            const snapshot = await getDocs(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"));
 
             let ficheScanne = null;
-            if (!querySnapshot.empty) {
-                ficheScanne = querySnapshot.docs[0].data();
+            if (!snapshot.empty) {
+                const docs = snapshot.docs.map(d => d.data());
+                // Trie par date/timestamp décroissant
+                docs.sort((a, b) => {
+                    const tA = (a.timestamp && a.timestamp.seconds) ? a.timestamp.seconds : (new Date(a.date_creation || 0).getTime() / 1000);
+                    const tB = (b.timestamp && b.timestamp.seconds) ? b.timestamp.seconds : (new Date(b.date_creation || 0).getTime() / 1000);
+                    return tB - tA;
+                });
+                ficheScanne = docs[0];
             }
 
-            // Génération dynamique et immédiate : on ne charge les images qu'à la volée
             if (ficheScanne && ficheScanne.notions_cles && ficheScanne.notions_cles.length > 0) {
                 document.getElementById("notion-label").innerText = `Leçon : ${ficheScanne.titre || "Sciences"}`;
+                
+                // Crée autant de manches qu'il y a de notions analysées dans le cours (ex: 6 à 10 notions)
                 manchesActives = ficheScanne.notions_cles.map(notion => ({
                     notionBrute: notion,
                     donneesManche: null
                 }));
                 TOTAL_MANCHES = manchesActives.length;
             } else {
-                manchesActives = BANQUES.bio.map(b => ({ donneesManche: b }));
+                // Repli si Firestore est vide
+                manchesActives = [
+                    {
+                        notionBrute: { terme: "Cellule animale", definition: "Unité biologique fondamentale protégée par une membrane plasmique.", terme_recherche_visuelle: "animal cell" },
+                        donneesManche: null
+                    },
+                    {
+                        notionBrute: { terme: "Microscope optique", definition: "Appareil muni d'objectifs permettant d'agrandir l'image d'un échantillon.", terme_recherche_visuelle: "optical microscope" },
+                        donneesManche: null
+                    }
+                ];
                 TOTAL_MANCHES = manchesActives.length;
             }
 
-            // Affiche la 1ère manche sans attendre
             await afficherManche(mancheActuelle);
 
         } catch (err) {
-            console.error("Erreur de chargement:", err);
-            manchesActives = BANQUES.bio.map(b => ({ donneesManche: b }));
-            TOTAL_MANCHES = manchesActives.length;
-            await afficherManche(mancheActuelle);
+            console.error("Erreur Firestore :", err);
+            document.getElementById("lesson-content").innerHTML = `<p style="color:#ff8598">Erreur de lecture Firestore : ${err.message}</p>`;
         }
     }
 
@@ -414,9 +421,8 @@ button.btn-action:hover {
 
         const item = manchesActives[index - 1];
 
-        // Si la manche n'est pas encore prête, on va chercher son image maintenant (lazy load ultra rapide)
         if (!item.donneesManche) {
-            document.getElementById("schema-display").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Chargement du visuel...</p>`;
+            document.getElementById("schema-display").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Récupération du visuel...</p>`;
             document.getElementById("lesson-content").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Préparation du défi...</p>`;
 
             const notion = item.notionBrute;
