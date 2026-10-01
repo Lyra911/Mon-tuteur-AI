@@ -1,12 +1,329 @@
-function transformerNotionEnManche(notion, imageUrl) {
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nox - Texte à trous pédagogique</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background: linear-gradient(180deg, #13174a 0%, #262d84 50%, #3f4dbf 100%);
+    color: #ffffff;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.btn-retour {
+    background: rgba(255, 255, 255, 0.15);
+    color: #7fe7ff;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-retour:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.badge-manche {
+    font-size: 13px;
+    color: #ffd166;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 209, 102, 0.15);
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 209, 102, 0.3);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.nox-container {
+    width: 100%;
+    height: 95px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nox {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    user-select: none;
+    animation: flotter 4s ease-in-out infinite, briller 2s ease-in-out infinite;
+}
+
+@keyframes briller {
+    0% { filter: drop-shadow(0 0 8px #7FE7FF); }
+    50% { filter: drop-shadow(0 0 25px #E2A7FF); }
+    100% { filter: drop-shadow(0 0 8px #7FE7FF); }
+}
+
+@keyframes flotter {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+.header h1 {
+    margin: 8px 0 4px 0;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.header p {
+    margin: 0;
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 8px;
+}
+
+.notion-titre {
+    color: #7fe7ff;
+    font-size: 14px;
+}
+
+.progress {
+    width: 100%;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 50px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #7fe7ff, #c896ff);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.schema-container {
+    width: 100%;
+    background: radial-gradient(circle at center, #0f1c3f 0%, #070b1a 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(127, 231, 255, 0.25);
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 14px;
+    min-height: 200px;
+    max-height: 250px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.schema-img {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(127, 231, 255, 0.4);
+}
+
+.book-area {
+    background: rgba(10, 15, 35, 0.85);
+    border: 2px dashed rgba(127, 231, 255, 0.35);
+    border-radius: 16px;
+    padding: 18px;
+    min-height: 110px;
+    line-height: 2.2;
+    font-size: 16px;
+    color: #e2e8f0;
+}
+
+/* Styles pour les menus déroulants dynamiques */
+.select-trou {
+    background: #0f1c3f;
+    color: #7fe7ff;
+    border: 2px solid rgba(127, 231, 255, 0.4);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    margin: 0 4px;
+    display: inline-block;
+    vertical-align: middle;
+    transition: all 0.2s ease;
+}
+
+.select-trou:focus {
+    border-color: #00f2fe;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+}
+
+button.btn-action {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #070b19;
+    font-weight: 800;
+    font-size: 15px;
+    margin-top: 18px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 242, 254, 0.3);
+    transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+button.btn-action:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+.reward {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6cff95;
+    margin-top: 15px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(108, 255, 149, 0.1);
+    border: 1px solid rgba(108, 255, 149, 0.25);
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="top-bar">
+        <a href="../index.html" class="btn-retour">
+            <i class="fa-solid fa-arrow-left"></i> Retour au QG
+        </a>
+        <div class="badge-manche">
+            <i class="fa-solid fa-flag-checkered"></i> Manche : <span id="manche-text">1 / 1</span>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="nox-container">
+            <img class="nox" id="nox-img" 
+                 src="../images/Nox.png" 
+                 onerror="this.src = '/Mon-tuteur-AI/images/Nox.png';" 
+                 alt="Nox">
+        </div>
+        <h1>Texte à trous interactif</h1>
+        <p>Observe l'image et choisis les bons mots pour reconstituer la leçon !</p>
+    </div>
+
+    <div class="card">
+        <div class="status-bar">
+            <span class="notion-titre" id="notion-label">Chargement de la leçon...</span>
+            <span><span id="count">0</span> / <span id="total-errors">0</span></span>
+        </div>
+
+        <div class="progress">
+            <div id="bar" class="progress-fill"></div>
+        </div>
+
+        <div class="schema-container" id="schema-display">
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Récupération du visuel...</p>
+        </div>
+
+        <div class="book-area" id="lesson-content">
+            <p><i class="fa-solid fa-spinner fa-spin"></i> Préparation des questions...</p>
+        </div>
+
+        <button class="btn-action" id="btn-suite" onclick="passerTexteSuivant()">
+            Vérifier et continuer
+        </button>
+
+        <div id="reward" class="reward">
+            ⭐ Bravo Coco !<br>
+            Tu as complété toutes les notions du cours avec brio (+50 XP pour Nox) !
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { ImageService } from "../services/imageService.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD0GbueWsIm8kaUnB6sZYykYSZl11s2JTs",
+      authDomain: "tuteur-ai.firebaseapp.com",
+      projectId: "tuteur-ai",
+      storageBucket: "tuteur-ai.firebasestorage.app",
+      messagingSenderId: "1025983965857",
+      appId: "1:1025983965857:web:121d32b494c8433f9f1ee0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const ELEVE_ID = "coco";
+    let TOTAL_MANCHES = 1;
+    let mancheActuelle = 1;
+    let manchesActives = [];
+
+    // Transformation passive et 100% dynamique (sans texte dur)
+    function transformerNotionEnManche(notion, imageUrl) {
         const nomNotion = notion.terme || "Notion";
         let htmlTexte = notion.phrase_a_trous || "";
 
-        // Génération 100% dynamique des menus déroulants
         if (notion.trous && Array.isArray(notion.trous)) {
             notion.trous.forEach(trou => {
-                // Mélange aléatoire des propositions livrées par l'IA
-                const optionsMelangees = [...trou.choix].sort(() => Math.random() - 0.5);
+                const optionsMelangees = [...(trou.choix || [])].sort(() => Math.random() - 0.5);
 
                 let selectHtml = `<select class="select-trou" data-correct="${trou.mot_correct}" onchange="verifierReponses()">`;
                 selectHtml += `<option value="">-- choisir --</option>`;
@@ -15,7 +332,8 @@ function transformerNotionEnManche(notion, imageUrl) {
                 });
                 selectHtml += `</select>`;
 
-                htmlTexte = htmlTexte.replace(`{${trou.id}}`, selectHtml);
+                const cleBalise = trou.id.startsWith("{") ? trou.id : `{${trou.id}}`;
+                htmlTexte = htmlTexte.split(cleBalise).join(selectHtml);
             });
         }
 
@@ -44,21 +362,115 @@ function transformerNotionEnManche(notion, imageUrl) {
                 sel.style.backgroundColor = "#0f1c3f";
             } else if (sel.value === sel.dataset.correct) {
                 sel.style.borderColor = "#6cff95";
-                sel.style.backgroundColor = "rgba(108, 255, 149, 0.2)";
+                sel.style.backgroundColor = "rgba(108, 255, 149, 0.25)";
                 trouves++;
             } else {
                 sel.style.borderColor = "#ff8598";
-                sel.style.backgroundColor = "rgba(255, 95, 122, 0.2)";
+                sel.style.backgroundColor = "rgba(255, 95, 122, 0.25)";
                 toutCorrect = false;
             }
         });
 
-        document.getElementById("count").innerText = trouves;
-        document.getElementById("bar").style.width = selects.length ? (trouves / selects.length) * 100 + "%" : "0%";
+        const countElem = document.getElementById("count");
+        const barElem = document.getElementById("bar");
 
-        if (tousRemplis && toutCorrect) {
+        if (countElem) countElem.innerText = trouves;
+        if (barElem && selects.length > 0) {
+            barElem.style.width = (trouves / selects.length) * 100 + "%";
+        }
+
+        if (tousRemplis && toutCorrect && selects.length > 0) {
             setTimeout(() => {
                 passerTexteSuivant();
             }, 800);
         }
     };
+
+    async function initialiserJeu() {
+        try {
+            const snap = await getDocs(collection(db, "utilisateurs", ELEVE_ID, "fiches_cours"));
+            
+            let derniereFiche = null;
+            if (!snap.empty) {
+                const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                docs.sort((a, b) => {
+                    const tA = a.timestamp?.seconds || (a.date_creation ? new Date(a.date_creation).getTime() / 1000 : 0);
+                    const tB = b.timestamp?.seconds || (b.date_creation ? new Date(b.date_creation).getTime() / 1000 : 0);
+                    return tB - tA;
+                });
+                derniereFiche = docs[0];
+            }
+
+            const notions = derniereFiche?.notions_cles || [];
+
+            if (notions.length > 0) {
+                document.getElementById("notion-label").innerText = `Leçon : ${derniereFiche.titre || "Cours scanné"}`;
+                
+                // Récupère l'intégralité des notions extraites
+                manchesActives = notions.map(n => ({
+                    notionBrute: n,
+                    donneesManche: null
+                }));
+                TOTAL_MANCHES = manchesActives.length;
+            } else {
+                document.getElementById("lesson-content").innerHTML = "<p>Aucune fiche trouvée. Scanne d'abord une leçon au QG !</p>";
+                return;
+            }
+
+            await afficherManche(mancheActuelle);
+
+        } catch (err) {
+            console.error("❌ Erreur chargement Firestore :", err);
+            document.getElementById("lesson-content").innerHTML = `<p style="color:#ff8598">Erreur : ${err.message}</p>`;
+        }
+    }
+
+    async function afficherManche(index) {
+        document.getElementById("count").innerText = "0";
+        document.getElementById("bar").style.width = "0%";
+        document.getElementById("manche-text").innerText = `${index} / ${TOTAL_MANCHES}`;
+
+        const item = manchesActives[index - 1];
+
+        if (!item.donneesManche) {
+            document.getElementById("schema-display").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Recherche de l'illustration...</p>`;
+            document.getElementById("lesson-content").innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> Préparation de la manche...</p>`;
+
+            const notion = item.notionBrute;
+            const recherche = notion.terme_recherche_visuelle || notion.terme || notion.nom;
+            
+            const imgUrl = await ImageService.trouverImage(recherche);
+            item.donneesManche = transformerNotionEnManche(notion, imgUrl);
+        }
+
+        const donnees = item.donneesManche;
+        document.getElementById("total-errors").innerText = donnees.nbTrous;
+
+        if (donnees.titre) {
+            document.getElementById("notion-label").innerText = `Notion : ${donnees.titre}`;
+        }
+
+        document.getElementById("schema-display").innerHTML = donnees.schema;
+        document.getElementById("lesson-content").innerHTML = donnees.texte;
+    }
+
+    window.passerTexteSuivant = async function() {
+        if (mancheActuelle < TOTAL_MANCHES) {
+            mancheActuelle++;
+            await afficherManche(mancheActuelle);
+        } else {
+            document.getElementById("schema-display").style.display = "none";
+            document.getElementById("lesson-content").style.display = "none";
+            document.getElementById("btn-suite").style.display = "none";
+            document.getElementById("reward").style.display = "block";
+            setTimeout(() => {
+                window.location.href = "../index.html";
+            }, 3000);
+        }
+    };
+
+    initialiserJeu();
+</script>
+
+</body>
+</html>
