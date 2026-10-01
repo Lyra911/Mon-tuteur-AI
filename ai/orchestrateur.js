@@ -1,5 +1,5 @@
 // ============================================================================
-// ORCHESTRATEUR CLIENT (ai/orchestrateur.js) - ANTI-INVERSION D'ARGUMENTS
+// ORCHESTRATEUR CLIENT (ai/orchestrateur.js) - INTERCEPTION DIRECTE DU HTML
 // ============================================================================
 
 import { db } from "../firebase.js";
@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/fir
 
 const URL_RELAIS = "https://script.google.com/macros/s/AKfycbzbvHkVRVNowyy_98Dpv44WinuqK0FmQ88HO4Q-DvcWg45P4UhH9vzzw10jmraVEDzx/exec";
 
+// Convertisseur Base64 ultra-fiable
 function fileVersBase64(fichier) {
   return new Promise((resolve) => {
     if (!fichier || !(fichier instanceof Blob || fichier instanceof File)) {
@@ -20,49 +21,56 @@ function fileVersBase64(fichier) {
 }
 
 export const OrchestrateurAI = {
-  // Remplacement de l'entrée pour gérer les arguments inversés
   async analyserFiche(arg1, arg2) {
     let donneesImages = arg1;
     let eleveId = arg2 || "coco";
 
-    // AUTO-CORRECTION : Si le 1er argument est une petite chaîne (ex: "coco"), 
-    // c'est que firebase.js a inversé l'élève et l'image !
+    // 1. Correction de l'inversion "coco" / image
     if (typeof arg1 === "string" && arg1.length < 50) {
-      console.warn("⚠️ [Orchestrateur] Inversion d'arguments détectée et corrigée automatiquement !");
       eleveId = arg1;
       donneesImages = arg2; 
+    }
+
+    // 2. INTERCEPTION DOM DIRECTE (Le Bypass magique)
+    // Si firebase.js a passé du vide parce qu'il n'a pas attendu le chargement...
+    const estVide = !donneesImages 
+                 || (typeof donneesImages === "string" && donneesImages.trim().length < 50) 
+                 || (Array.isArray(donneesImages) && donneesImages.length === 0);
+
+    if (estVide) {
+      console.warn("⚠️ firebase.js a envoyé une image vide. L'Orchestrateur force la récupération depuis la page web !");
+      
+      // On fouille la page web pour trouver le bouton d'importation
+      const inputHTML = document.querySelector('input[type="file"]');
+      
+      if (inputHTML && inputHTML.files && inputHTML.files.length > 0) {
+        donneesImages = Array.from(inputHTML.files);
+        console.log("✅ Image attrapée avec succès directement depuis la page !");
+      } else {
+        throw new Error("Aucun fichier détecté. Veuillez sélectionner une image avant d'envoyer.");
+      }
     }
 
     return await this.traiterDocumentComplet(donneesImages, eleveId);
   },
 
   async traiterDocumentComplet(donneesImages, eleveId = "coco") {
-    console.log("🔍 [Orchestrateur] Type de données d'image traité :", typeof donneesImages, donneesImages);
-
     let elementsAExtraire = [];
 
-    // Cas 1 : L'argument est un événement JS (ex: e.target.files)
+    // Normalisation
     if (donneesImages && donneesImages.target && donneesImages.target.files) {
       elementsAExtraire = Array.from(donneesImages.target.files);
-    }
-    // Cas 2 : L'argument est directement l'élément <input type="file">
-    else if (donneesImages && donneesImages.files) {
+    } else if (donneesImages && donneesImages.files) {
       elementsAExtraire = Array.from(donneesImages.files);
-    }
-    // Cas 3 : C'est une FileList
-    else if (donneesImages instanceof FileList) {
+    } else if (donneesImages instanceof FileList) {
       elementsAExtraire = Array.from(donneesImages);
-    }
-    // Cas 4 : C'est déjà un tableau
-    else if (Array.isArray(donneesImages)) {
+    } else if (Array.isArray(donneesImages)) {
       elementsAExtraire = donneesImages;
-    }
-    // Cas 5 : Un seul élément direct (File, Blob, string longue ou objet)
-    else if (donneesImages) {
+    } else if (donneesImages) {
       elementsAExtraire = [donneesImages];
     }
 
-    // Traitement et conversion asynchrone
+    // Conversion de chaque image
     const promesses = elementsAExtraire.map(async (item) => {
       if (!item) return "";
 
@@ -71,13 +79,18 @@ export const OrchestrateurAI = {
       }
 
       if (typeof item === "string") {
+        if (item.startsWith("blob:")) {
+          try {
+            const rep = await fetch(item);
+            const blob = await rep.blob();
+            return await fileVersBase64(blob);
+          } catch (e) { return ""; }
+        }
         return item;
       }
 
       if (typeof item === "object") {
-        if (item.file instanceof File || item.file instanceof Blob) {
-          return await fileVersBase64(item.file);
-        }
+        if (item.file instanceof File || item.file instanceof Blob) return await fileVersBase64(item.file);
         return item.base64 || item.data || item.image || item.src || item.url || "";
       }
 
@@ -85,16 +98,17 @@ export const OrchestrateurAI = {
     });
 
     const resultats = await Promise.all(promesses);
+    
+    // On ne garde que les vrais Base64 complets
     const imagesNettoyees = resultats.filter(str => typeof str === "string" && str.length > 50);
 
-    console.log(`🚀 [Orchestrateur] Envoi de ${imagesNettoyees.length} image(s) valide(s) aux agents...`);
+    console.log(`🚀 [Orchestrateur] Envoi de ${imagesNettoyees.length} page(s) HD au relais Apps Script...`);
 
     if (imagesNettoyees.length === 0) {
-      console.error("❌ Données brutes reçues non convertibles :", donneesImages);
-      throw new Error("Impossible d'extraire les données Base64 de l'image. Vérifiez le fichier importé.");
+      throw new Error("Le fichier est illisible. Essaie avec une autre photo.");
     }
 
-    // Envoi au relais Apps Script
+    // Envoi au serveur Apps Script
     const rep = await fetch(URL_RELAIS, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -103,12 +117,12 @@ export const OrchestrateurAI = {
 
     const resultat = await rep.json();
     if (!resultat.success) {
-      throw new Error(resultat.error || "Erreur de traitement des agents");
+      throw new Error(resultat.error || "Erreur de connexion avec l'IA.");
     }
 
     const coursFinal = resultat.donnees;
 
-    // Enregistrement dans Firestore
+    // Enregistrement dans la base de données
     const payloadFirestore = {
       titre: coursFinal.titre,
       matiere: coursFinal.matiere,
@@ -119,7 +133,7 @@ export const OrchestrateurAI = {
     };
 
     const docRef = await addDoc(collection(db, "utilisateurs", eleveId, "fiches_cours"), payloadFirestore);
-    console.log("💾 [Orchestrateur] Cours enrichi sauvegardé avec succès | ID :", docRef.id);
+    console.log("💾 [Orchestrateur] Cours magique généré et sauvegardé ! ID :", docRef.id);
 
     return { id: docRef.id, ...payloadFirestore };
   }
