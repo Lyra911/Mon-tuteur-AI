@@ -9,6 +9,11 @@ import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/fir
 const URL_RELAIS = "https://script.google.com/macros/s/AKfycbzR7fX4F_p5Vv7G-F_Zf_y6c_w0vH8bE/exec"; // Mets ton URL /exec ici
 
 export const OrchestrateurAI = {
+  // Alias requis par l'appel dans firebase.js
+  async analyserFiche(imagesBase64, eleveId = "coco") {
+    return await this.traiterDocumentComplet(imagesBase64, eleveId);
+  },
+
   async traiterDocumentComplet(imagesBase64, eleveId = "coco") {
     console.log(`🚀 [Orchestrateur] Envoi de ${imagesBase64.length} page(s) aux 4 agents...`);
 
